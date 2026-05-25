@@ -6,12 +6,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,7 +27,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.android_app.data.local.TokenStore
 import com.example.android_app.ui.sceens.home.*
+import com.example.android_app.ui.sceens.add.AddManualScreen
+import com.example.android_app.ui.sceens.login.LoginScreen
 import com.example.android_app.ui.sceens.meal.Background
 import com.example.android_app.ui.sceens.meal.MealScreen
 import com.example.android_app.ui.sceens.meal.OutlineVariant
@@ -32,37 +40,62 @@ import com.example.android_app.ui.sceens.meal.TextSecondary
 import com.example.android_app.ui.theme.OnPrimary
 import com.example.android_app.ui.theme.PrimaryContainer
 
-sealed class Screen(val route: String, val label: String, val icon: String) {
-    object Home : Screen("home", "Tủ Lạnh", "🧊")
-    object Menu : Screen("menu", "Thực Đơn", "🍽")
-    object Shopping : Screen("shopping", "Đi Chợ", "🛒")
-    object Profile : Screen("profile", "Cá Nhân", "👤")
+sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
+    object Login    : Screen("login",      "Đăng Nhập",   Icons.Default.Login)
+    object Home     : Screen("home",       "Tủ Lạnh",     Icons.Default.Kitchen)
+    object Menu     : Screen("menu",       "Thực Đơn",    Icons.Default.RestaurantMenu)
+    object Shopping : Screen("shopping",   "Đi Chợ",      Icons.Default.ShoppingCart)
+    object Profile  : Screen("profile",    "Cá Nhân",     Icons.Default.Person)
+    object AddManual: Screen("add_manual", "Thêm Thủ Công",Icons.Default.Add)
 }
 
 @Composable
 fun AppNavigation(navController: NavHostController = rememberNavController()) {
+    // Đọc token từ SharedPreferences ngay khi compose lần đầu
+    val context = LocalContext.current
+    val tokenStore = remember { TokenStore(context) }
+    val startDestination = if (tokenStore.isLoggedIn) Screen.Home.route else Screen.Login.route
+
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        // ── Màn hình Login (KHÔNG có bottom bar) ──────────────────────────────
+        composable(Screen.Login.route) {
+            LoginScreen(navController)
+        }
+
+        // ── Các màn hình chính (CÓ bottom bar) ───────────────────────────────
+        composable(Screen.Home.route) {
+            MainScaffold(navController) { HomeScreen() }
+        }
+        composable(Screen.Menu.route) {
+            MainScaffold(navController) { MealScreen() }
+        }
+        composable(Screen.Shopping.route) {
+            MainScaffold(navController) { PlaceholderScreen("Màn hình Đi Chợ") }
+        }
+        composable(Screen.Profile.route) {
+            MainScaffold(navController) { PlaceholderScreen("Màn hình Cá Nhân") }
+        }
+
+        // ── Màn hình phụ (KHÔNG có bottom bar) ───────────────────────────────
+        composable(Screen.AddManual.route) {
+            AddManualScreen(navController)
+        }
+    }
+}
+
+/** Scaffold dùng chung cho các tab chính — chứa TopBar + BottomBar */
+@Composable
+fun MainScaffold(navController: NavHostController, content: @Composable () -> Unit) {
     Scaffold(
         containerColor = Background,
         topBar = { TopNavBarGlass() },
         bottomBar = { BottomNavBarGlass(navController) }
     ) { innerPadding ->
-        NavHost(
-            navController = navController, 
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Screen.Home.route) {
-                HomeScreen()
-            }
-            composable(Screen.Menu.route) {
-                MealScreen()
-            }
-            composable(Screen.Shopping.route) {
-                PlaceholderScreen("Màn hình Đi Chợ")
-            }
-            composable(Screen.Profile.route) {
-                PlaceholderScreen("Màn hình Cá Nhân")
-            }
+        Box(modifier = Modifier.padding(innerPadding)) {
+            content()
         }
     }
 }
@@ -88,11 +121,15 @@ fun TopNavBarGlass() {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = {}) {
-                Text("☰", fontSize = 24.sp, color = Primary)
+                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Primary)
             }
-            Text("SmartBite", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Primary)
+            Text(
+                "SmartBite",
+                style = MaterialTheme.typography.titleMedium,
+                color = Primary
+            )
             IconButton(onClick = {}) {
-                Text("🎤", fontSize = 20.sp)
+                Icon(Icons.Default.Mic, contentDescription = "Mic", tint = Primary)
             }
         }
     }
@@ -100,13 +137,8 @@ fun TopNavBarGlass() {
 
 @Composable
 fun BottomNavBarGlass(navController: NavHostController) {
-    val items = listOf(
-        Screen.Home,
-        Screen.Menu,
-        Screen.Shopping,
-        Screen.Profile
-    )
-    
+    val items = listOf(Screen.Home, Screen.Menu, Screen.Shopping, Screen.Profile)
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -126,15 +158,15 @@ fun BottomNavBarGlass(navController: NavHostController) {
         ) {
             items.forEachIndexed { index, screen ->
                 if (index == 2) {
-                    // Spacer for FAB
+                    // Spacer cho FAB ở giữa
                     Box(modifier = Modifier.width(64.dp))
                 }
-                
+
                 val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                
+
                 NavBarItem(
-                    icon = screen.icon, 
-                    label = screen.label, 
+                    icon = screen.icon,
+                    label = screen.label,
                     isSelected = isSelected,
                     onClick = {
                         navController.navigate(screen.route) {
@@ -148,8 +180,8 @@ fun BottomNavBarGlass(navController: NavHostController) {
                 )
             }
         }
-        
-        // Custom FAB overlapping the top
+
+        // FAB Thêm ở giữa
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -161,7 +193,7 @@ fun BottomNavBarGlass(navController: NavHostController) {
                         .size(56.dp)
                         .background(SurfaceContainerLowest, CircleShape)
                         .padding(4.dp)
-                        .clickable { /* Handle FAB click */ }
+                        .clickable { navController.navigate(Screen.AddManual.route) }
                 ) {
                     Box(
                         modifier = Modifier
@@ -169,7 +201,7 @@ fun BottomNavBarGlass(navController: NavHostController) {
                             .background(PrimaryContainer, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("+", fontSize = 32.sp, color = OnPrimary)
+                        Icon(Icons.Default.Add, contentDescription = "Add", tint = OnPrimary, modifier = Modifier.size(32.dp))
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -180,19 +212,18 @@ fun BottomNavBarGlass(navController: NavHostController) {
 }
 
 @Composable
-fun NavBarItem(icon: String, label: String, isSelected: Boolean, onClick: () -> Unit) {
+fun NavBarItem(icon: ImageVector, label: String, isSelected: Boolean, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(64.dp)
             .clickable(onClick = onClick)
     ) {
-        Text(icon, fontSize = 24.sp, color = if (isSelected) Primary else TextSecondary)
+        Icon(icon, contentDescription = label, tint = if (isSelected) Primary else TextSecondary, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelSmall,
             color = if (isSelected) Primary else TextSecondary
         )
     }

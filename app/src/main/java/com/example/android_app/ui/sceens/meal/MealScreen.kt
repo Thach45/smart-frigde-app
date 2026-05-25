@@ -10,8 +10,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -66,6 +72,8 @@ fun MealScreen() {
 
 @Composable
 fun HeaderAndWeekView() {
+    var selectedDate by remember { mutableStateOf("24") }
+    
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -80,10 +88,11 @@ fun HeaderAndWeekView() {
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(PrimaryFixedDim.copy(alpha = 0.2f))
+                    .clickable { }
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("📅", fontSize = 16.sp, modifier = Modifier.padding(end = 4.dp))
+                Icon(Icons.Default.CalendarToday, contentDescription = "Calendar", tint = Primary, modifier = Modifier.size(16.dp).padding(end = 4.dp))
                 Text("Lịch", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
         }
@@ -97,24 +106,26 @@ fun HeaderAndWeekView() {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             val dates = listOf(
-                Pair("T2", "22") to false,
-                Pair("T3", "23") to false,
-                Pair("T4", "24") to true,
-                Pair("T5", "25") to false,
-                Pair("T6", "26") to false,
-                Pair("T7", "27") to false,
+                Pair("T2", "22"),
+                Pair("T3", "23"),
+                Pair("T4", "24"),
+                Pair("T5", "25"),
+                Pair("T6", "26"),
+                Pair("T7", "27"),
             )
             
-            dates.forEach { (date, isSelected) ->
+            dates.forEach { date ->
+                val isSelected = date.second == selectedDate
                 Column(
                     modifier = Modifier
                         .width(56.dp)
                         .height(80.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) Primary else SurfaceContainer)
                         .let {
                             if (isSelected) it.shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp)) else it
-                        },
+                        }
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isSelected) Primary else SurfaceContainer)
+                        .clickable { selectedDate = date.second },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -152,7 +163,7 @@ fun NutritionRingsSection() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Mục tiêu Dinh dưỡng", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
-                Text("⚙️", fontSize = 16.sp) // icon tune placeholder
+                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextSecondary, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -232,7 +243,7 @@ fun MealPlanSection() {
             statusLabel = "Đã hoàn thành • 450 kcal",
             dishName = "Yến mạch ủ qua đêm & Trái cây",
             subtitle = "Có sẵn trong tủ lạnh",
-            icon = "🌅",
+            icon = Icons.Default.WbTwilight,
             iconColor = TextSecondary,
             indicatorColor = SurfaceContainerHighest,
             imageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDqhCzRCVj--6_NDrYvm4zb68Vt3EbOQZjSNReTWxubKbDn7VUurXn5wXQ7nwtJNy-9w6yAvzuVN2ACdPmQ7ZhWcNhwD3aEXoCsj5ZvLm6n21dxLQkaCID5CAfa9KRTF23Y403rawnSDJlEv6JoxBVmpnTQCcHpSh9CjmVlMOdW1wd48LqOnvgNfYDZgv4b1bnUjriYLmGau3OgoP73jlPkzZnCY2wSGcLJAgIt1RCDVY0t5rHW0JHfqjxg-vlCmNHOvWbGNUqj90r8",
@@ -249,7 +260,7 @@ fun MealPlanSection() {
             statusLabel = "Gợi ý • 650 kcal",
             dishName = "Salad Ức Gà Áp Chảo",
             subtitle = "Sắp hết hạn: Xà lách • Nấu: 15p",
-            icon = "☀️",
+            icon = Icons.Default.WbSunny,
             iconColor = Primary,
             indicatorColor = Primary,
             imageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuAazX5CUlo4E7d7aTzsuXayXKnlVUkt6c5HUyMcmMT59ad4oDwkYPqIZ4OQ500cUd-mGJJBzdUNuNlZO1fyGAUIFOn4xvn3VABd6Nma6jJ3D4TeCmPai5k-FMR3I-Zr8m37lJ8NK3auNU36AlzsWRYImxBuhtBAt24AtAdtLMRcD1qLJBTolX3xqCisOtKvmbT_izwQsy4cs0AlCKL86Yi9IjeZNXcCW_VVKdbY7OEwwMLWE0l59ojHavcOmNFIGxablrH169eBrx4O",
@@ -266,7 +277,7 @@ fun MealPlanSection() {
             statusLabel = "Dự kiến • 550 kcal",
             dishName = "Cá Hồi Áp Chảo Măng Tây",
             subtitle = "⚠️ Thiếu măng tây",
-            icon = "🌙",
+            icon = Icons.Default.NightsStay,
             iconColor = Tertiary,
             indicatorColor = TertiaryContainer,
             imageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDdjwEIeqQPBMxwdMTkku5wFFW_Afm0GjfzGJqlcXPD9EX3ewqL9iSor_HFM0ST_J4Xx9mIuvs18M--BAS3qoAfVP1pmheAxgF4E6DUeVKWtbFsCEHeBNcPc2nYtGtqRGnikjYXOi7lk3qa6jSmH44-ODc6ImFTR9fqPCgU-ojdTqs1V4fFvTDDutzhCAsJ9ASrqzxSCS6TjzwiQ6s9JoXlAnwab2L0S8NjKl2zkv5LMG3APReXZfC0FsF8hPEj-QGW-vsyqmH-ANLV",
@@ -283,7 +294,7 @@ fun MealCard(
     statusLabel: String,
     dishName: String,
     subtitle: String,
-    icon: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconColor: Color,
     indicatorColor: Color,
     imageUrl: String,
@@ -315,7 +326,7 @@ fun MealCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(icon, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
+                        Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp).padding(end = 4.dp))
                         Text(mealName, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = iconColor)
                     }
                     Text(
@@ -382,7 +393,7 @@ fun MealCard(
                     }
                     
                     if (isCompleted) {
-                        Text("✅", fontSize = 24.sp)
+                        Icon(Icons.Default.CheckCircle, contentDescription = "Completed", tint = Primary, modifier = Modifier.size(28.dp))
                     } else if (isWarning) {
                         Box(
                             modifier = Modifier
@@ -390,7 +401,7 @@ fun MealCard(
                                 .clickable { }
                                 .padding(8.dp)
                         ) {
-                            Text("🛒", fontSize = 24.sp)
+                            Icon(Icons.Default.ShoppingCart, contentDescription = "Shop", tint = Primary, modifier = Modifier.size(24.dp))
                         }
                     }
                 }
@@ -414,7 +425,7 @@ fun MealCard(
                             contentPadding = PaddingValues(0.dp),
                             border = BorderStroke(1.dp, OutlineVariant)
                         ) {
-                            Text("🔄", fontSize = 20.sp)
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Primary)
                         }
                     }
                 }

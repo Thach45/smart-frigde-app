@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import coil.compose.AsyncImage
 import com.example.android_app.ui.theme.ErrorColor
 import com.example.android_app.ui.theme.OnPrimary
@@ -47,15 +49,15 @@ data class FoodItem(
     val statusText: String,
     val statusColor: Color,
     val statusTextColor: Color = statusColor,
-    val badgeIcon: String,
+    val badgeIcon: androidx.compose.ui.graphics.vector.ImageVector,
     val imageUrl: String
 )
 
 val mockFoodItems = listOf(
-    FoodItem("Trứng gà", "10 quả", 0.8f, "Còn 12 ngày", Tertiary, Tertiary, "🌱", "https://lh3.googleusercontent.com/aida-public/AB6AXuBQlZA8DVr0kdjLBmZGu6hUU4KqDXZ13s2TwhfuCmiERqmoWd_myf1xNDUh7GA-HYFcZqmH8xihMiplUWcJ-DhJkPalcooTk8v3D7RR_Gxzm1t1jmMgvAT2IaLhH0CzEBMqzB7yjYdZqotrkjlWFmAgtaRslD9On4SGFB6NyBcdOQQHvWqQ7XEezM4lzNQyeVr0JvZKMQry-bnZB7j4cmj3J8PCtjFAMUB44Io59eN-jYmcJ5oIkJnOgzPI52hb7aZ5UUa-8eFQTEDP"),
-    FoodItem("Sữa tươi", "1.5L", 0.15f, "Hết hạn ngày mai", ErrorColor, ErrorColor, "⚠️", "https://lh3.googleusercontent.com/aida-public/AB6AXuBQc9UaJFJC981KDt7gQFcO0Z50Nq127DTaI3KtF-onQ5345AqfgAukcJ2zOBhlDkc8GNyTFxqCD7OARYj7THI35RyUZS350RK2lmygDRnQSOS_pGm3U4FZtdOYWc4TcKNDJg8w34fWDsEbIRaQNDxBMHe51zf1Z0fRidyodgCWa3vugC5Ei8e3QTCvsZMv5op94pTFE2KKbYcidmhBh7cQ7n-jnc4nESVtZgUww9HZivuIduaXeDrkXZpEVqZPYC3kK11pt8882Xld"),
-    FoodItem("Rau cải", "500g", 0.6f, "Còn 4 ngày", PrimaryContainer, Primary, "🌱", "https://lh3.googleusercontent.com/aida-public/AB6AXuDg_9oNJ1GDOiYw1P06Ew_YItk0OExEyuPV5_rhbikUXAu8Qup6wgROrOW4YN_xSOhPhL5MtsGSWJ39JT4FPDsKlxVx-215I1DI_1JiTTCqDRSxjneP-YJ39zFeKZS8No251Z9y7xJL7nLbUGM44iv1lZB_ZhWdp9qLajtSTX_qaQkCsEWPd93we-rKz6ki8YkqvkeWHFMafKMYAHSV_hGD0Fb1goOWxWKftNue-XbbXQNQYNfxkfWUtCyX8mcIiQukiNbqWi-hwE10"),
-    FoodItem("Thịt bò", "300g", 0.3f, "Còn 2 ngày", WarningColor, WarningText, "🧊", "https://lh3.googleusercontent.com/aida-public/AB6AXuCanjnhW6P7lbzI0bc7QMWe_JSHpiEGrVUAWMspd3DqC5_Bpbf7ec6_toA7a1h4k1m7uO5cdsV45jbM6aP--aUcMgeIsBzIRqmfbLLjlRAhORk5dSWpboT5Cbhu4T0gEWHCTeIRdgg680tRGvOW7aIwCGy_acUIaGXB4oaHrXqdIf_uBbRNs_-zFeK78UVccYnsdSLWhl7Evaqnoop1FXZzjbDKpYEcoFoBjOJPe8z2MKtcP5svQiRlpO94MkDZl6o2VIWafl91U0bY")
+    FoodItem("Trứng gà", "10 quả", 0.8f, "Còn 12 ngày", Tertiary, Tertiary, Icons.Default.Eco, "https://lh3.googleusercontent.com/aida-public/AB6AXuBQlZA8DVr0kdjLBmZGu6hUU4KqDXZ13s2TwhfuCmiERqmoWd_myf1xNDUh7GA-HYFcZqmH8xihMiplUWcJ-DhJkPalcooTk8v3D7RR_Gxzm1t1jmMgvAT2IaLhH0CzEBMqzB7yjYdZqotrkjlWFmAgtaRslD9On4SGFB6NyBcdOQQHvWqQ7XEezM4lzNQyeVr0JvZKMQry-bnZB7j4cmj3J8PCtjFAMUB44Io59eN-jYmcJ5oIkJnOgzPI52hb7aZ5UUa-8eFQTEDP"),
+    FoodItem("Sữa tươi", "1.5L", 0.15f, "Hết hạn ngày mai", ErrorColor, ErrorColor, Icons.Default.Warning, "https://lh3.googleusercontent.com/aida-public/AB6AXuBQc9UaJFJC981KDt7gQFcO0Z50Nq127DTaI3KtF-onQ5345AqfgAukcJ2zOBhlDkc8GNyTFxqCD7OARYj7THI35RyUZS350RK2lmygDRnQSOS_pGm3U4FZtdOYWc4TcKNDJg8w34fWDsEbIRaQNDxBMHe51zf1Z0fRidyodgCWa3vugC5Ei8e3QTCvsZMv5op94pTFE2KKbYcidmhBh7cQ7n-jnc4nESVtZgUww9HZivuIduaXeDrkXZpEVqZPYC3kK11pt8882Xld"),
+    FoodItem("Rau cải", "500g", 0.6f, "Còn 4 ngày", PrimaryContainer, Primary, Icons.Default.Eco, "https://lh3.googleusercontent.com/aida-public/AB6AXuDg_9oNJ1GDOiYw1P06Ew_YItk0OExEyuPV5_rhbikUXAu8Qup6wgROrOW4YN_xSOhPhL5MtsGSWJ39JT4FPDsKlxVx-215I1DI_1JiTTCqDRSxjneP-YJ39zFeKZS8No251Z9y7xJL7nLbUGM44iv1lZB_ZhWdp9qLajtSTX_qaQkCsEWPd93we-rKz6ki8YkqvkeWHFMafKMYAHSV_hGD0Fb1goOWxWKftNue-XbbXQNQYNfxkfWUtCyX8mcIiQukiNbqWi-hwE10"),
+    FoodItem("Thịt bò", "300g", 0.3f, "Còn 2 ngày", WarningColor, WarningText, Icons.Default.AcUnit, "https://lh3.googleusercontent.com/aida-public/AB6AXuCanjnhW6P7lbzI0bc7QMWe_JSHpiEGrVUAWMspd3DqC5_Bpbf7ec6_toA7a1h4k1m7uO5cdsV45jbM6aP--aUcMgeIsBzIRqmfbLLjlRAhORk5dSWpboT5Cbhu4T0gEWHCTeIRdgg680tRGvOW7aIwCGy_acUIaGXB4oaHrXqdIf_uBbRNs_-zFeK78UVccYnsdSLWhl7Evaqnoop1FXZzjbDKpYEcoFoBjOJPe8z2MKtcP5svQiRlpO94MkDZl6o2VIWafl91U0bY")
 )
 
 @Composable
@@ -145,7 +147,7 @@ fun VoiceAssistantHeroCard() {
                     .shadow(elevation = 4.dp, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text("🎤", fontSize = 36.sp)
+                Icon(Icons.Default.Mic, contentDescription = "Mic", tint = Primary, modifier = Modifier.size(36.dp))
             }
 
             // Search input
@@ -157,7 +159,7 @@ fun VoiceAssistantHeroCard() {
                     .background(Color(0xFFF1F2F6))
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Text("🔍", color = TextSecondary, fontSize = 20.sp)
+                Icon(Icons.Default.Search, contentDescription = "Search", tint = TextSecondary, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text("Thử nói \"Nhà còn trứng không?\"", color = TextSecondary, fontSize = 16.sp)
             }
@@ -184,9 +186,9 @@ fun CategoriesTabs() {
             ) {
                 Text(
                     text = title,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = if (isSelected) OnPrimary else TextSecondary,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 14.sp
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                 )
             }
         }
@@ -211,8 +213,8 @@ fun SubCategoriesTabs() {
             ) {
                 Text(
                     text = title,
-                    color = TextSecondary,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
                 )
             }
         }
@@ -267,13 +269,21 @@ fun FoodCard(item: FoodItem) {
                             .background(Color.White.copy(alpha = 0.9f), CircleShape)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text(item.badgeIcon, fontSize = 12.sp)
+                        Icon(item.badgeIcon, contentDescription = null, tint = item.statusColor, modifier = Modifier.size(16.dp))
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextOnSurface)
-                Text(item.quantity, color = TextSecondary, fontSize = 14.sp)
+                Text(
+                    item.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextOnSurface
+                )
+                Text(
+                    item.quantity,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 // Progress Bar
@@ -288,7 +298,11 @@ fun FoodCard(item: FoodItem) {
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(item.statusText, color = item.statusTextColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    item.statusText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = item.statusTextColor
+                )
             }
         }
     }
