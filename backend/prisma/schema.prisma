@@ -1,0 +1,171 @@
+// Khai báo Datasource cho MongoDB
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Khai báo Generator cho Prisma Client
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS (Các kiểu dữ liệu liệt kê)
+// ==========================================
+
+// Phân loại vị trí lưu trữ thực tế trong tủ lạnh (Dựa theo mục 1.2)
+enum Compartment {
+  FRIDGE      // Ngăn mát
+  FREEZER     // Ngăn đá
+  DOOR        // Cánh tủ
+  CRISPER     // Khay rau củ
+}
+
+// Mục tiêu sức khỏe cho Kế hoạch dinh dưỡng (Dựa theo mục 3.1)
+enum HealthGoal {
+  LOSE_WEIGHT // Giảm cân
+  GAIN_MUSCLE // Tăng cơ
+  MAINTAIN    // Giữ dáng
+}
+
+// Trạng thái của bữa ăn được gợi ý
+enum MealStatus {
+  SUGGESTED   // AI vừa gợi ý (từ cronjob hoặc sinh tự động)
+  ACCEPTED    // Người dùng đồng ý nấu
+  REJECTED    // Người dùng bỏ qua
+}
+
+// Phương thức nhập liệu
+enum EntryMethod {
+  MANUAL        // Nhập tay
+  SCAN_BARCODE  // Quét mã vạch
+  SCAN_IMAGE    // Quét hình ảnh
+  VOICE         // Nhập bằng giọng nói
+}
+
+// Vai trò người dùng
+enum Role {
+  USER
+  ADMIN
+}
+
+// Loại bữa ăn trong ngày
+enum MealType {
+  BREAKFAST // Bữa sáng
+  LUNCH     // Bữa trưa
+  DINNER    // Bữa tối
+  SNACK     // Bữa phụ / Ăn vặt
+}
+
+// ==========================================
+// TYPES (Các kiểu dữ liệu nhúng - dùng cho MongoDB)
+// ==========================================
+
+// Cấu trúc nguyên liệu chuẩn hóa cho công thức nấu ăn
+type RecipeIngredient {
+  name     String   // Tên nguyên liệu
+  quantity Float?   // Số lượng
+  unit     String?  // Đơn vị tính
+}
+
+// ==========================================
+// MODELS (Các bảng dữ liệu)
+// ==========================================
+
+// Bảng Người dùng
+model User {
+  id             String          @id @default(auto()) @map("_id") @db.ObjectId
+  email          String          @unique
+  passwordHash   String          // Mật khẩu đã mã hoá (bcrypt)
+  name           String?
+  role           Role            @default(USER)  // Phân quyền
+  fcmTokens      String[]        // Token để nhận push notification cảnh báo hết hạn
+  healthGoal     HealthGoal?     // Mục tiêu sức khỏe để AI lên thực đơn
+  inventoryItems InventoryItem[] // Danh sách thực phẩm trong tủ lạnh của user
+  shoppingLists  ShoppingList[]  // Danh sách đi chợ của user
+  meals          Meal[]          // Danh sách các bữa ăn (kèm công thức) của user
+  refreshTokens  RefreshToken[]  // Token cho phiên đăng nhập
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+// Bảng Refresh Token (Hỗ trợ Auth duy trì đăng nhập)
+model RefreshToken {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  hashedToken String
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+// Bảng Kho Thực Phẩm (Smart Inventory - Mục 1.1 & 1.2)
+model InventoryItem {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String      @db.ObjectId
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name              String      // Tên thực phẩm (vd: Cà chua, Thịt bò)
+  barcode           String?     // Mã vạch (nếu có quét)
+  quantity          Float       // Số lượng
+  unit              String      // Đơn vị tính (vd: kg, lít, quả, hộp)
+  
+  category          String      // Danh mục do AI tự gán (vd: Rau củ, Thịt cá)
+  compartment       Compartment // Vị trí ngăn tủ
+  
+  imageUrl          String?     // Ảnh chụp thực phẩm
+  expiryDate        DateTime    // Hạn sử dụng
+  isExpiryPredicted Boolean     @default(false) // AI tự đoán hạn hay là user nhập chuẩn
+  
+  entryMethod       EntryMethod @default(MANUAL) // Hình thức nhập liệu
+  
+  isWasted          Boolean     @default(false) // Đánh dấu nếu bị vứt bỏ để thống kê lãng phí (Mục 2.2)
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+// Bảng Danh Sách Đi Chợ (Tự động sinh từ Diet Planner - Mục 3.1)
+model ShoppingList {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  itemName    String   // Tên món đồ cần mua
+  quantity    Float?   // Số lượng cần mua
+  unit        String?  // Đơn vị
+  
+  isPurchased Boolean  @default(false) // Trạng thái đã mua hay chưa
+  
+  mealId      String?  @db.ObjectId // (Tuỳ chọn) Món này được thêm vào từ bữa ăn nào
+  meal        Meal?    @relation(fields: [mealId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Bảng Bữa Ăn (Bao gồm cả Công thức nấu ăn do AI sinh ra - Mục 2.2 & 3.1)
+model Meal {
+  id           String               @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String               @db.ObjectId
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Thông tin kế hoạch ăn uống
+  date         DateTime             // Ngày áp dụng thực đơn
+  mealType     MealType             // Bữa ăn (Sáng, Trưa, Tối, Snack)
+  status       MealStatus           @default(SUGGESTED) // Trạng thái gợi ý để user chốt
+  
+  // Thông tin công thức (AI mix từ nguyên liệu tủ lạnh)
+  title        String               // Tên món
+  description  String?              // Mô tả ngắn
+  ingredients  RecipeIngredient[]   // Mảng danh sách các nguyên liệu đã chuẩn hóa
+  instructions String[]             // Mảng các bước thực hiện
+  imageUrl     String?              // Hình ảnh món ăn
+  prepTime     Int?                 // Thời gian chuẩn bị (tính bằng phút)
+  calories     Int?                 // Số Calo ước tính
+  
+  shoppingListItems ShoppingList[]    // Các món đi chợ phát sinh từ bữa ăn này
+  
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}

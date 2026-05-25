@@ -2,11 +2,14 @@ package com.example.android_app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.android_app.model.FridgeItem
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
 
-class FridgeViewModel : ViewModel() {
+@HiltViewModel
+class FridgeViewModel @Inject constructor() : ViewModel() {
     private val _items = MutableStateFlow<List<FridgeItem>>(emptyList())
     val items: StateFlow<List<FridgeItem>> = _items.asStateFlow()
 
@@ -15,7 +18,7 @@ class FridgeViewModel : ViewModel() {
         _items.value = listOf(
             FridgeItem(1, "Milk", 2),
             FridgeItem(2, "Eggs", 12),
-            FridgeItem(3, "Apple", 5)
+            FridgeItem(3, "Apple", 5),
         )
     }
 
@@ -23,8 +26,8 @@ class FridgeViewModel : ViewModel() {
         val newItem = FridgeItem(
             id = (_items.value.maxOfOrNull { it.id } ?: 0) + 1,
             name = name,
-            quantity = quantity
+            quantity = quantity,
         )
-        _items.value = _items.value + newItem
+        _items.value += newItem
     }
 }
