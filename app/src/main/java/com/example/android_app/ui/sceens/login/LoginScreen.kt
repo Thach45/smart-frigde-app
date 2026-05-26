@@ -300,7 +300,9 @@ fun LoginScreen(
             // Signup Link
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 Text("Chưa có tài khoản? ", fontSize = 14.sp, color = TextSecondary)
-                Text("Đăng ký ngay", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Primary, modifier = Modifier.clickable { })
+                Text("Đăng ký ngay", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Primary, modifier = Modifier.clickable {
+                    navController.navigate("register")
+                })
             }
 
             Spacer(modifier = Modifier.height(32.dp))

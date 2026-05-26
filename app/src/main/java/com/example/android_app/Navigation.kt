@@ -31,14 +31,15 @@ import com.example.android_app.data.local.TokenStore
 import com.example.android_app.ui.sceens.home.*
 import com.example.android_app.ui.sceens.add.AddManualScreen
 import com.example.android_app.ui.sceens.login.LoginScreen
-import com.example.android_app.ui.sceens.meal.Background
-import com.example.android_app.ui.sceens.meal.MealScreen
-import com.example.android_app.ui.sceens.meal.OutlineVariant
-import com.example.android_app.ui.sceens.meal.Primary
-import com.example.android_app.ui.sceens.meal.SurfaceContainerLowest
-import com.example.android_app.ui.sceens.meal.TextSecondary
+import com.example.android_app.ui.sceens.login.RegisterScreen
+import com.example.android_app.ui.sceens.meal.*
+import com.example.android_app.ui.sceens.shopping.ShoppingScreen
+import com.example.android_app.ui.sceens.profile.ProfileScreen
+import com.example.android_app.ui.components.VoiceAssistantBottomSheet
 import com.example.android_app.ui.theme.OnPrimary
 import com.example.android_app.ui.theme.PrimaryContainer
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Login    : Screen("login",      "Đăng Nhập",   Icons.Default.Login)
@@ -64,6 +65,9 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
         composable(Screen.Login.route) {
             LoginScreen(navController)
         }
+        composable("register") {
+            RegisterScreen(navController)
+        }
 
         // ── Các màn hình chính (CÓ bottom bar) ───────────────────────────────
         composable(Screen.Home.route) {
@@ -73,15 +77,36 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             MainScaffold(navController) { MealScreen() }
         }
         composable(Screen.Shopping.route) {
-            MainScaffold(navController) { PlaceholderScreen("Màn hình Đi Chợ") }
+            MainScaffold(navController) { ShoppingScreen() }
         }
         composable(Screen.Profile.route) {
-            MainScaffold(navController) { PlaceholderScreen("Màn hình Cá Nhân") }
+            MainScaffold(navController) {
+                ProfileScreen(onLogout = {
+                    tokenStore.clear()
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                })
+            }
         }
 
         // ── Màn hình phụ (KHÔNG có bottom bar) ───────────────────────────────
         composable(Screen.AddManual.route) {
             AddManualScreen(navController)
+        }
+        composable("scanner") {
+            com.example.android_app.ui.sceens.scanner.ScannerScreen(navController)
+        }
+        composable("food_detail/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")
+            com.example.android_app.ui.sceens.food_detail.FoodDetailScreen(navController, "Thực phẩm $id")
+        }
+        composable("recipe_suggestion") {
+            com.example.android_app.ui.sceens.recipe.RecipeSuggestionScreen(navController)
+        }
+        composable("recipe_detail/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")
+            com.example.android_app.ui.sceens.recipe.RecipeDetailScreen(navController, id)
         }
     }
 }
@@ -89,14 +114,20 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
 /** Scaffold dùng chung cho các tab chính — chứa TopBar + BottomBar */
 @Composable
 fun MainScaffold(navController: NavHostController, content: @Composable () -> Unit) {
+    var showVoiceAssistant by remember { mutableStateOf(false) }
+
     Scaffold(
         containerColor = Background,
-        topBar = { TopNavBarGlass() },
+        topBar = { TopNavBarGlass(onMicClick = { showVoiceAssistant = true }) },
         bottomBar = { BottomNavBarGlass(navController) }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             content()
         }
+    }
+
+    if (showVoiceAssistant) {
+        VoiceAssistantBottomSheet(onDismissRequest = { showVoiceAssistant = false })
     }
 }
 
@@ -108,7 +139,7 @@ fun PlaceholderScreen(title: String) {
 }
 
 @Composable
-fun TopNavBarGlass() {
+fun TopNavBarGlass(onMicClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,7 +159,7 @@ fun TopNavBarGlass() {
                 style = MaterialTheme.typography.titleMedium,
                 color = Primary
             )
-            IconButton(onClick = {}) {
+            IconButton(onClick = onMicClick) {
                 Icon(Icons.Default.Mic, contentDescription = "Mic", tint = Primary)
             }
         }
@@ -193,7 +224,7 @@ fun BottomNavBarGlass(navController: NavHostController) {
                         .size(56.dp)
                         .background(SurfaceContainerLowest, CircleShape)
                         .padding(4.dp)
-                        .clickable { navController.navigate(Screen.AddManual.route) }
+                        .clickable { navController.navigate("scanner") }
                 ) {
                     Box(
                         modifier = Modifier

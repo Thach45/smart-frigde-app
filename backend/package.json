@@ -9,7 +9,8 @@
     "start": "dotenv -e ../.env -- node dist/index.js",
     "db:generate": "dotenv -e ../.env -- prisma generate",
     "db:push": "dotenv -e ../.env -- prisma db push",
-    "db:studio": "dotenv -e ../.env -- prisma studio"
+    "db:studio": "dotenv -e ../.env -- prisma studio",
+    "db:seed": "dotenv -e ../.env -- tsx prisma/seed.ts"
   },
   "dependencies": {
     "@google/genai": "^1.50.1",
@@ -36,5 +37,8 @@
     "prisma": "^6.19.0",
     "tsx": "^4.19.2",
     "typescript": "^5.9.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

@@ -32,6 +32,7 @@ import com.example.android_app.ui.theme.OnPrimary
 import com.example.android_app.ui.theme.Primary
 import com.example.android_app.ui.theme.PrimaryContainer
 import com.example.android_app.ui.theme.SurfaceContainer
+import com.example.android_app.ui.theme.SurfaceContainerHighest
 import com.example.android_app.ui.theme.SurfaceContainerLowest
 import com.example.android_app.ui.theme.Tertiary
 import com.example.android_app.ui.theme.TertiaryContainer
@@ -227,56 +228,46 @@ fun FoodCard(item: FoodItem) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-            // Freshness Indicator Bar
+        Column {
+            // Image container
             Box(
                 modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxHeight()
-                    .padding(vertical = 24.dp)
-                    .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                    .background(item.statusColor)
-            )
-            
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(12.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(SurfaceContainerHighest)
             ) {
-                // Image container
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                
+                // Status Badge
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SurfaceContainerLowest)
-                        .border(1.dp, Color.Black.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(Color.White, CircleShape)
+                        .padding(4.dp)
                 ) {
-                    AsyncImage(
-                        model = item.imageUrl,
-                        contentDescription = item.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    
-                    // Status Badge
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .background(Color.White.copy(alpha = 0.9f), CircleShape)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Icon(item.badgeIcon, contentDescription = null, tint = item.statusColor, modifier = Modifier.size(16.dp))
-                    }
+                    Icon(item.badgeIcon, contentDescription = null, tint = item.statusColor, modifier = Modifier.size(16.dp))
                 }
-                
-                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
+            // Text Content
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
                 Text(
                     item.name,
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     color = TextOnSurface
                 )
                 Text(
@@ -284,7 +275,7 @@ fun FoodCard(item: FoodItem) {
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 // Progress Bar
                 LinearProgressIndicator(
@@ -297,10 +288,11 @@ fun FoodCard(item: FoodItem) {
                     trackColor = SurfaceContainer
                 )
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     item.statusText,
                     style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
                     color = item.statusTextColor
                 )
             }
