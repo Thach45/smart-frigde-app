@@ -1,6 +1,7 @@
 package com.example.android_app.di
 
-import com.example.android_app.data.api.AuthApiService
+import com.example.android_app.data.local.TokenStore
+import com.example.android_app.data.remote.api.AuthApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,11 +23,18 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(tokenStore: TokenStore): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                tokenStore.accessToken?.let { token ->
+                    request.addHeader("Authorization", "Bearer $token")
+                }
+                chain.proceed(request.build())
+            }
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -47,5 +55,11 @@ object NetworkModule {
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
         return retrofit.create(AuthApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideInventoryApiService(retrofit: Retrofit): com.example.android_app.data.remote.api.InventoryApiService {
+        return retrofit.create(com.example.android_app.data.remote.api.InventoryApiService::class.java)
     }
 }

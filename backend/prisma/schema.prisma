@@ -117,6 +117,10 @@ model InventoryItem {
   expiryDate        DateTime    // Hạn sử dụng
   isExpiryPredicted Boolean     @default(false) // AI tự đoán hạn hay là user nhập chuẩn
   
+  notes             String?     // Ghi chú thêm
+  price             Float?      // Giá tiền mua thực phẩm
+  kcal              Int?        // Hàm lượng calo (kcal)
+  
   entryMethod       EntryMethod @default(MANUAL) // Hình thức nhập liệu
   
   isWasted          Boolean     @default(false) // Đánh dấu nếu bị vứt bỏ để thống kê lãng phí (Mục 2.2)

@@ -8,8 +8,11 @@ export const CreateInventoryItemSchema = z.object({
   unit: z.string().min(1).max(50),
   category: z.string().min(1).max(100),
   compartment: z.nativeEnum(Compartment),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().optional().or(z.string().length(0).optional()),
   expiryDate: z.string().datetime(), // Expecting ISO-8601 string
+  notes: z.string().optional(),
+  price: z.number().nonnegative().optional(),
+  kcal: z.number().int().nonnegative().optional(),
 });
 
 export type CreateInventoryItemDto = z.infer<typeof CreateInventoryItemSchema>;
@@ -21,8 +24,11 @@ export const UpdateInventoryItemSchema = z.object({
   unit: z.string().min(1).max(50).optional(),
   category: z.string().min(1).max(100).optional(),
   compartment: z.nativeEnum(Compartment).optional(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().url().optional().or(z.string().length(0).optional()),
   expiryDate: z.string().datetime().optional(),
+  notes: z.string().optional(),
+  price: z.number().nonnegative().optional(),
+  kcal: z.number().int().nonnegative().optional(),
   isWasted: z.boolean().optional(),
 });
 
