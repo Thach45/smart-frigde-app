@@ -1,227 +1,179 @@
 package com.example.android_app.feature.assistant.recipe
 
-import androidx.compose.foundation.ExperimentalFoundationApi
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.lerp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.compose.AsyncImage
 import com.example.android_app.ui.theme.*
-import kotlin.math.absoluteValue
 
-data class RecipeSuggestion(
-    val id: Int,
-    val name: String,
-    val time: String,
-    val matchPercentage: Int,
-    val imageUrl: String,
-    val keyIngredients: List<String>
-)
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RecipeSuggestionScreen(navController: NavController) {
-    val recipes = remember {
-        listOf(
-            RecipeSuggestion(1, "Salad Bơ Trứng", "15 phút", 95, "https://lh3.googleusercontent.com/aida-public/AB6AXuDqhCzRCVj--6_NDrYvm4zb68Vt3EbOQZjSNReTWxubKbDn7VUurXn5wXQ7nwtJNy-9w6yAvzuVN2ACdPmQ7ZhWcNhwD3aEXoCsj5ZvLm6n21dxLQkaCID5CAfa9KRTF23Y403rawnSDJlEv6JoxBVmpnTQCcHpSh9CjmVlMOdW1wd48LqOnvgNfYDZgv4b1bnUjriYLmGau3OgoP73jlPkzZnCY2wSGcLJAgIt1RCDVY0t5rHW0JHfqjxg-vlCmNHOvWbGNUqj90r8", listOf("Bơ sắp hỏng", "Trứng gà")),
-            RecipeSuggestion(2, "Bò Xào Cà Chua", "25 phút", 80, "https://lh3.googleusercontent.com/aida-public/AB6AXuAqbo53DXU-CxPQ--huBdChJOjjYnDxtGqNCLWcxQhFuws5jTVXaF_HtxWbLMx3cWcxgZPe00Qoy-jKrehIJ0ayx4ibEYYwagLJUT5oSSah-Tt2kcsYgFfm_fqPhe8fRx0gA5WsqqJdwtGDgE49hvLtfR1s45NljMzidTicpQ4Lyxnc8MhmrxeEVMLY3vOI9uSotH3BWmIyAIDjOEBfr1zqws4Gn8OyBt-Sh57DGcA8u8TKWXg8dsDmllnv1yiURTF2ABul9abIN2rQ", listOf("Thịt bò băm", "Cà chua bi")),
-            RecipeSuggestion(3, "Cá Hồi Áp Chảo", "20 phút", 70, "https://lh3.googleusercontent.com/aida-public/AB6AXuAzm-w9vP-3n73e3J8i_qBpxv7M4H7pC9b3iXgC44o3b4wF8y1j4D5D-P0x-H_9mQ2kR7133O_8O1u3V8Bf0tGzXn5mK_9pC5s1gT2hI3Vq0iN2Xz-E1mUaQ6l9WjP2pXyq_Y6H_6V9b5yIu9H6e2S4GfP2X0-R0L6QG8W4T0oFw3Vv3I0QxNlC4F9M_sA_Xp6K4X2f_N4J_o3B8T5I0kF_3g", listOf("Cá hồi phi lê", "Xà lách"))
-        )
+fun RecipeSuggestionScreen(
+    navController: NavController,
+    targetItemId: String,
+    viewModel: RecipeSuggestionViewModel = hiltViewModel()
+) {
+    val context = LocalContext.current
+    val uiState by viewModel.uiState.collectAsState()
+
+    // Load AI recipe suggestion on launch
+    LaunchedEffect(targetItemId) {
+        viewModel.loadSuggestion(targetItemId)
     }
 
-    val pagerState = rememberPagerState(pageCount = { recipes.size })
+    // Handle acceptance success
+    LaunchedEffect(uiState.isAccepted) {
+        if (uiState.isAccepted) {
+            Toast.makeText(
+                context,
+                "Đã thêm vào Thực đơn & cập nhật nguyên liệu thiếu vào Danh sách đi chợ!",
+                Toast.LENGTH_LONG
+            ).show()
+            // Go back to the main home
+            navController.popBackStack("home", inclusive = false)
+        }
+    }
+
+    // Show error toast
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    val meal = uiState.meal
 
     Scaffold(
         containerColor = Background,
         topBar = {
             TopAppBar(
-                title = { Text("Nấu Gì Hôm Nay?", fontWeight = FontWeight.Bold, color = Primary) },
+                title = { Text("Gợi Ý Từ AI Gemini", fontWeight = FontWeight.Bold, color = Primary) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Primary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại", tint = Primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
             )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(PrimaryContainer.copy(alpha = 0.2f))
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Primary, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Gợi ý từ đồ sắp hỏng", color = Primary, fontWeight = FontWeight.SemiBold)
-            }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-
-            HorizontalPager(
-                state = pagerState,
-                contentPadding = PaddingValues(horizontal = 32.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) { page ->
-                val recipe = recipes[page]
-                
-                Card(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 8.dp)
-                        .graphicsLayer {
-                            // Calculate the absolute offset for the current page from the
-                            // scroll position. We use the absolute value which allows us to mirror
-                            // any effects for both directions
-                            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction).absoluteValue
-
-                            // We animate the scaleX + scaleY, between 85% and 100%
-                            lerp(
-                                start = 0.85f,
-                                stop = 1f,
-                                fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                            ).also { scale ->
-                                scaleX = scale
-                                scaleY = scale
-                            }
-
-                            // We animate the alpha, between 50% and 100%
-                            alpha = lerp(
-                                start = 0.5f,
-                                stop = 1f,
-                                fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                            )
-                        },
-                    shape = RoundedCornerShape(32.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        },
+        bottomBar = {
+            if (meal != null) {
+                Surface(
+                    color = SurfaceContainerLowest,
+                    shadowElevation = 16.dp
                 ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        AsyncImage(
-                            model = recipe.imageUrl,
-                            contentDescription = recipe.name,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        
-                        // Gradient Overlay
-                        Box(
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { navController.popBackStack() },
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                                        startY = 300f
-                                    )
-                                )
-                        )
-                        
-                        // Content
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(24.dp)
+                                .weight(1f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.5.dp, Primary),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Primary),
+                            enabled = !uiState.isLoading
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .background(PrimaryContainer)
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text("Phù hợp ${recipe.matchPercentage}%", color = OnPrimaryContainer, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(recipe.name, fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Timer, contentDescription = "Time", tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(recipe.time, color = Color.White.copy(alpha = 0.7f))
-                            }
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("Dùng nguyên liệu:", fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                recipe.keyIngredients.forEach { ingredient ->
-                                    Box(
-                                        modifier = Modifier
-                                            .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text(ingredient, color = Color.White, fontSize = 12.sp)
-                                    }
-                                }
+                            Text("Bỏ qua", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
+
+                        Button(
+                            onClick = { viewModel.acceptMeal(meal.id) },
+                            modifier = Modifier
+                                .weight(1.5f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary),
+                            enabled = !uiState.isLoading
+                        ) {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(color = OnPrimary, modifier = Modifier.size(24.dp))
+                            } else {
+                                Icon(Icons.Default.CheckCircle, contentDescription = "Chốt")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Chốt nấu món này", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             }
                         }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            // Swipe actions (Dislike / Like)
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
+        }
+    ) { padding ->
+        if (uiState.isLoading && meal == null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                IconButton(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.White, CircleShape)
-                        // .border(1.dp, Color(0xFFE53935).copy(alpha = 0.3f), CircleShape)
+                CircularProgressIndicator(color = Primary, modifier = Modifier.size(48.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Bỏ qua", tint = Color(0xFFE53935), modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Primary)
+                    Text(
+                        text = "Gemini đang lên công thức...",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary
+                    )
                 }
-                
-                IconButton(
-                    onClick = { 
-                        navController.navigate("recipe_detail/${recipes[pagerState.currentPage].id}") 
-                    },
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(PrimaryContainer, CircleShape)
-                ) {
-                    Icon(Icons.Default.Favorite, contentDescription = "Lưu lại", tint = Color.White, modifier = Modifier.size(40.dp))
-                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Đang tính toán các nguyên liệu tối ưu trong tủ",
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
             }
-            
-            Spacer(modifier = Modifier.height(48.dp))
+        } else if (meal == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = uiState.errorMessage ?: "Không tìm thấy gợi ý công thức",
+                    color = TextSecondary,
+                    fontSize = 16.sp
+                )
+            }
+        } else {
+            RecipeContent(
+                meal = meal,
+                modifier = Modifier.padding(padding)
+            )
         }
     }
 }

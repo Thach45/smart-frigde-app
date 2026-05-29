@@ -82,7 +82,7 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             }
         }
         composable(Screen.Menu.route) {
-            MainScaffold(navController) { MealScreen() }
+            MainScaffold(navController) { MealScreen(navController) }
         }
         composable(Screen.Shopping.route) {
             MainScaffold(navController) { ShoppingScreen() }
@@ -109,11 +109,12 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             val id = backStackEntry.arguments?.getString("id") ?: ""
             com.example.android_app.feature.inventory.detail.FoodDetailScreen(navController, id)
         }
-        composable("recipe_suggestion") {
-            com.example.android_app.feature.assistant.recipe.RecipeSuggestionScreen(navController)
+        composable("recipe_suggestion/{targetItemId}") { backStackEntry ->
+            val targetItemId = backStackEntry.arguments?.getString("targetItemId") ?: ""
+            com.example.android_app.feature.assistant.recipe.RecipeSuggestionScreen(navController, targetItemId)
         }
         composable("recipe_detail/{id}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id")
+            val id = backStackEntry.arguments?.getString("id") ?: ""
             com.example.android_app.feature.assistant.recipe.RecipeDetailScreen(navController, id)
         }
     }

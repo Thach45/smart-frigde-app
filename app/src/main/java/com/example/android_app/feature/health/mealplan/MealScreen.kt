@@ -14,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +33,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 val Primary = Color(0xFF506600)
 val OnPrimary = Color(0xFFFFFFFF)
@@ -53,7 +61,16 @@ val CarbsColor = Color(0xFF3B82F6)
 val FatColor = Color(0xFFEAB308)
 
 @Composable
-fun MealScreen() {
+fun MealScreen(
+    navController: NavController,
+    viewModel: MealViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadMeals()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,14 +82,30 @@ fun MealScreen() {
         Spacer(modifier = Modifier.height(32.dp))
         NutritionRingsSection()
         Spacer(modifier = Modifier.height(32.dp))
-        MealPlanSection()
+
+        if (uiState.isLoading && uiState.meals.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Primary)
+            }
+        } else {
+            MealPlanSection(
+                meals = uiState.meals,
+                onMealClick = { mealId ->
+                    navController.navigate("recipe_detail/$mealId")
+                }
+            )
+        }
+
         Spacer(modifier = Modifier.height(100.dp)) // padding for bottom nav
     }
 }
 
 @Composable
 fun HeaderAndWeekView() {
-    var selectedDate by remember { mutableStateOf("24") }
+    var selectedDate by remember { mutableStateOf("28") }
     
     Column {
         Row(
@@ -82,7 +115,7 @@ fun HeaderAndWeekView() {
         ) {
             Column {
                 Text("Hôm nay", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
-                Text("Thứ Tư, 24 Tháng 5", fontSize = 16.sp, color = TextSecondary)
+                Text("Thứ Năm, 28 Tháng 5", fontSize = 16.sp, color = TextSecondary)
             }
             Row(
                 modifier = Modifier
@@ -106,12 +139,12 @@ fun HeaderAndWeekView() {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             val dates = listOf(
-                Pair("T2", "22"),
-                Pair("T3", "23"),
-                Pair("T4", "24"),
-                Pair("T5", "25"),
-                Pair("T6", "26"),
-                Pair("T7", "27"),
+                Pair("T2", "26"),
+                Pair("T3", "27"),
+                Pair("T4", "28"),
+                Pair("T5", "29"),
+                Pair("T6", "30"),
+                Pair("T7", "31"),
             )
             
             dates.forEach { date ->
@@ -232,59 +265,87 @@ fun MacroRingRow(label: String, value: String, color: Color, progress: Float, in
 }
 
 @Composable
-fun MealPlanSection() {
+fun MealPlanSection(
+    meals: List<com.example.android_app.domain.model.Meal>,
+    onMealClick: (String) -> Unit
+) {
     Column {
         Text("Lịch trình bữa ăn", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Breakfast - Completed
-        MealCard(
-            mealName = "Bữa Sáng",
-            statusLabel = "Đã hoàn thành • 450 kcal",
-            dishName = "Yến mạch ủ qua đêm & Trái cây",
-            subtitle = "Có sẵn trong tủ lạnh",
-            icon = Icons.Default.WbTwilight,
-            iconColor = TextSecondary,
-            indicatorColor = SurfaceContainerHighest,
-            imageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDqhCzRCVj--6_NDrYvm4zb68Vt3EbOQZjSNReTWxubKbDn7VUurXn5wXQ7nwtJNy-9w6yAvzuVN2ACdPmQ7ZhWcNhwD3aEXoCsj5ZvLm6n21dxLQkaCID5CAfa9KRTF23Y403rawnSDJlEv6JoxBVmpnTQCcHpSh9CjmVlMOdW1wd48LqOnvgNfYDZgv4b1bnUjriYLmGau3OgoP73jlPkzZnCY2wSGcLJAgIt1RCDVY0t5rHW0JHfqjxg-vlCmNHOvWbGNUqj90r8",
-            isCompleted = true,
-            isSuggested = false,
-            isWarning = false
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Lunch - Suggested
-        MealCard(
-            mealName = "Bữa Trưa",
-            statusLabel = "Gợi ý • 650 kcal",
-            dishName = "Salad Ức Gà Áp Chảo",
-            subtitle = "Sắp hết hạn: Xà lách • Nấu: 15p",
-            icon = Icons.Default.WbSunny,
-            iconColor = Primary,
-            indicatorColor = Primary,
-            imageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuAazX5CUlo4E7d7aTzsuXayXKnlVUkt6c5HUyMcmMT59ad4oDwkYPqIZ4OQ500cUd-mGJJBzdUNuNlZO1fyGAUIFOn4xvn3VABd6Nma6jJ3D4TeCmPai5k-FMR3I-Zr8m37lJ8NK3auNU36AlzsWRYImxBuhtBAt24AtAdtLMRcD1qLJBTolX3xqCisOtKvmbT_izwQsy4cs0AlCKL86Yi9IjeZNXcCW_VVKdbY7OEwwMLWE0l59ojHavcOmNFIGxablrH169eBrx4O",
-            isCompleted = false,
-            isSuggested = true,
-            isWarning = false
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        // Dinner - Planned
-        MealCard(
-            mealName = "Bữa Tối",
-            statusLabel = "Dự kiến • 550 kcal",
-            dishName = "Cá Hồi Áp Chảo Măng Tây",
-            subtitle = "⚠️ Thiếu măng tây",
-            icon = Icons.Default.NightsStay,
-            iconColor = Tertiary,
-            indicatorColor = TertiaryContainer,
-            imageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDdjwEIeqQPBMxwdMTkku5wFFW_Afm0GjfzGJqlcXPD9EX3ewqL9iSor_HFM0ST_J4Xx9mIuvs18M--BAS3qoAfVP1pmheAxgF4E6DUeVKWtbFsCEHeBNcPc2nYtGtqRGnikjYXOi7lk3qa6jSmH44-ODc6ImFTR9fqPCgU-ojdTqs1V4fFvTDDutzhCAsJ9ASrqzxSCS6TjzwiQ6s9JoXlAnwab2L0S8NjKl2zkv5LMG3APReXZfC0FsF8hPEj-QGW-vsyqmH-ANLV",
-            isCompleted = false,
-            isSuggested = false,
-            isWarning = true
-        )
+        if (meals.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+                border = BorderStroke(1.dp, SurfaceContainer)
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RestaurantMenu,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Chưa có thực đơn nào được chọn",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextOnSurface
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Hãy chọn nút 'Nấu ăn' trong chi tiết thực phẩm để nhận gợi ý món ăn từ AI.",
+                        fontSize = 13.sp,
+                        color = TextSecondary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            meals.forEach { meal ->
+                val formattedCal = meal.calories?.let { "$it kcal" } ?: "350 kcal"
+                val dateText = try {
+                    val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
+                        timeZone = TimeZone.getTimeZone("UTC")
+                    }
+                    val parsedDate = format.parse(meal.date)
+                    SimpleDateFormat("dd/MM", Locale.getDefault()).format(parsedDate ?: Date())
+                } catch (e: Exception) {
+                    try {
+                        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+                            timeZone = TimeZone.getTimeZone("UTC")
+                        }
+                        val parsedDate = format.parse(meal.date)
+                        SimpleDateFormat("dd/MM", Locale.getDefault()).format(parsedDate ?: Date())
+                    } catch (e2: Exception) {
+                        ""
+                    }
+                }
+                
+                val displayDate = if (dateText.isNotBlank()) " • $dateText" else ""
+
+                MealCard(
+                    mealName = "Bữa Ăn$displayDate",
+                    statusLabel = "Đã chốt • $formattedCal",
+                    dishName = meal.title,
+                    subtitle = meal.description ?: "Tận dụng nguyên liệu từ tủ lạnh",
+                    icon = Icons.Default.Restaurant,
+                    iconColor = Primary,
+                    indicatorColor = PrimaryFixedDim,
+                    imageUrl = meal.imageUrl ?: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200&auto=format&fit=crop",
+                    isCompleted = meal.status == "ACCEPTED",
+                    isSuggested = false,
+                    isWarning = false,
+                    onClick = { onMealClick(meal.id) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
     }
 }
 
@@ -300,10 +361,13 @@ fun MealCard(
     imageUrl: String,
     isCompleted: Boolean,
     isSuggested: Boolean,
-    isWarning: Boolean
+    isWarning: Boolean,
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSuggested) 6.dp else 2.dp),

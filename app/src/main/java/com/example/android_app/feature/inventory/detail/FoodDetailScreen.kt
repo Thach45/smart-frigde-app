@@ -132,7 +132,7 @@ fun FoodDetailScreen(
 
                         // Action 2: Nấu ăn với món này (Suggest recipe)
                         Button(
-                            onClick = { navController.navigate("recipe_suggestion") },
+                            onClick = { navController.navigate("recipe_suggestion/$foodId") },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(56.dp),
