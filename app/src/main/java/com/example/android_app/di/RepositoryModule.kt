@@ -31,4 +31,10 @@ abstract class RepositoryModule {
     abstract fun bindMealRepository(
         mealRepositoryImpl: com.example.android_app.data.repository.MealRepositoryImpl
     ): com.example.android_app.domain.repository.MealRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindShoppingRepository(
+        shoppingRepositoryImpl: com.example.android_app.data.repository.ShoppingRepositoryImpl
+    ): com.example.android_app.domain.repository.ShoppingRepository
 }

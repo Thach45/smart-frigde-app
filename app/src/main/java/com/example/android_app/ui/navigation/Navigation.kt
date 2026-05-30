@@ -107,27 +107,41 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
         }
         composable("food_detail/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: ""
-            com.example.android_app.feature.inventory.detail.FoodDetailScreen(navController, id)
+            MainScaffold(navController, showTopBar = false) {
+                com.example.android_app.feature.inventory.detail.FoodDetailScreen(navController, id)
+            }
         }
         composable("recipe_suggestion/{targetItemId}") { backStackEntry ->
             val targetItemId = backStackEntry.arguments?.getString("targetItemId") ?: ""
-            com.example.android_app.feature.assistant.recipe.RecipeSuggestionScreen(navController, targetItemId)
+            MainScaffold(navController, showTopBar = false) {
+                com.example.android_app.feature.assistant.recipe.RecipeSuggestionScreen(navController, targetItemId)
+            }
         }
         composable("recipe_detail/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: ""
-            com.example.android_app.feature.assistant.recipe.RecipeDetailScreen(navController, id)
+            MainScaffold(navController, showTopBar = false) {
+                com.example.android_app.feature.assistant.recipe.RecipeDetailScreen(navController, id)
+            }
         }
     }
 }
 
 /** Scaffold dùng chung cho các tab chính — chứa TopBar + BottomBar */
 @Composable
-fun MainScaffold(navController: NavHostController, content: @Composable () -> Unit) {
+fun MainScaffold(
+    navController: NavHostController,
+    showTopBar: Boolean = true,
+    content: @Composable () -> Unit
+) {
     var showVoiceAssistant by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Background,
-        topBar = { TopNavBarGlass(onMicClick = { showVoiceAssistant = true }) },
+        topBar = { 
+            if (showTopBar) {
+                TopNavBarGlass(onMicClick = { showVoiceAssistant = true })
+            }
+        },
         bottomBar = { BottomNavBarGlass(navController) }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -202,7 +216,14 @@ fun BottomNavBarGlass(navController: NavHostController) {
                     Box(modifier = Modifier.width(64.dp))
                 }
 
-                val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                val isSelected = currentDestination?.hierarchy?.any { 
+                    it.route == screen.route || 
+                    (screen == Screen.Home && (
+                        currentDestination.route?.startsWith("food_detail") == true || 
+                        currentDestination.route?.startsWith("recipe_suggestion") == true || 
+                        currentDestination.route?.startsWith("recipe_detail") == true
+                    ))
+                } == true
 
                 NavBarItem(
                     icon = screen.icon,

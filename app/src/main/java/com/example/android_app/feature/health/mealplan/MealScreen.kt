@@ -329,9 +329,11 @@ fun MealPlanSection(
                 
                 val displayDate = if (dateText.isNotBlank()) " • $dateText" else ""
 
+                val statusText = if (meal.status == "ACCEPTED") "Đã chốt" else "Gợi ý"
+
                 MealCard(
                     mealName = "Bữa Ăn$displayDate",
-                    statusLabel = "Đã chốt • $formattedCal",
+                    statusLabel = "$statusText • $formattedCal",
                     dishName = meal.title,
                     subtitle = meal.description ?: "Tận dụng nguyên liệu từ tủ lạnh",
                     icon = Icons.Default.Restaurant,
