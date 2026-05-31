@@ -8,6 +8,7 @@ inventoryRouter.use(requireAuth);
 
 inventoryRouter.post('/', inventoryController.create);
 inventoryRouter.get('/', inventoryController.getAll);
+inventoryRouter.get('/waste/stats', inventoryController.getWasteStats);
 inventoryRouter.get('/:id', inventoryController.getOne);
 inventoryRouter.patch('/:id', inventoryController.update);
 inventoryRouter.delete('/:id', inventoryController.delete);

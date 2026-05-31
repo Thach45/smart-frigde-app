@@ -73,6 +73,8 @@ ${expiringText || 'Không có nguyên liệu nào sắp hết hạn.'}
 ${availableText || 'Không có.'}
 
 Bạn có thể thêm các gia vị cơ bản hoặc một vài nguyên liệu ngoài (nếu thực sự cần thiết).
+
+QUAN TRỌNG: Đối với những nguyên liệu lấy từ tủ lạnh (được liệt kê ở trên), bạn BẮT BUỘC phải viết Tên nguyên liệu ('name') và Đơn vị tính ('unit') trùng khớp hoàn toàn (không viết tắt hay đổi tên, đổi đơn vị) với danh sách được cung cấp ở trên.
 Hãy trả về JSON theo đúng định dạng.`;
 
   const response = await ai.models.generateContent({
@@ -197,6 +199,8 @@ ${expiringText || 'Không có nguyên liệu nào sắp hết hạn.'}
 ${availableText || 'Không có.'}
 
 Bạn có thể thêm các gia vị cơ bản hoặc một vài nguyên liệu ngoài (nếu thực sự cần thiết).
+
+QUAN TRỌNG: Đối với những nguyên liệu lấy từ tủ lạnh (được liệt kê ở trên), bạn BẮT BUỘC phải viết Tên nguyên liệu ('name') và Đơn vị tính ('unit') trùng khớp hoàn toàn (không viết tắt hay đổi tên, đổi đơn vị) với danh sách được cung cấp ở trên.
 Hãy trả về JSON theo đúng định dạng.`;
 
   let parsed;

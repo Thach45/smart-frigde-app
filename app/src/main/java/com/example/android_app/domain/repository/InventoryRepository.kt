@@ -21,4 +21,6 @@ interface InventoryRepository {
     suspend fun getItemDetails(id: String): Result<FridgeItem>
 
     suspend fun deleteItem(id: String): Result<Unit>
+
+    suspend fun getWasteStats(): Result<com.example.android_app.data.remote.api.WasteStatsResponse>
 }

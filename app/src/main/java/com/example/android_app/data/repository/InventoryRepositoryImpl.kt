@@ -87,4 +87,19 @@ class InventoryRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun getWasteStats(): Result<com.example.android_app.data.remote.api.WasteStatsResponse> {
+        return try {
+            val response = apiService.getWasteStats()
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    Result.success(it)
+                } ?: Result.failure(Exception("Empty body response"))
+            } else {
+                Result.failure(Exception("Lỗi lấy thống kê: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

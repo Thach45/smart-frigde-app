@@ -71,4 +71,14 @@ export const inventoryController = {
       res.status(500).json({ error: 'Failed to delete item' });
     }
   },
+
+  getWasteStats: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const stats = await inventoryService.getWasteStats(req.userId!);
+      res.status(200).json(stats);
+    } catch (err: any) {
+      console.error('Get waste stats error:', err);
+      res.status(500).json({ error: 'Failed to retrieve waste stats' });
+    }
+  },
 };

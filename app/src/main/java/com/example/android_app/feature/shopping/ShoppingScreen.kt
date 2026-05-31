@@ -7,10 +7,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.*
@@ -20,136 +22,247 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.android_app.domain.model.ShoppingItem
 import com.example.android_app.ui.theme.*
 
-// Mock data model
-data class ShoppingItem(
-    val id: Int,
-    val name: String,
-    val note: String,
-    val quantity: String,
-    var isChecked: Boolean = false
-)
-
-data class ShoppingCategory(
-    val name: String,
-    val items: List<ShoppingItem>
-)
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ShoppingScreen() {
-    val categories = remember {
-        mutableStateListOf(
-            ShoppingCategory(
-                "Rau củ quả",
-                listOf(
-                    ShoppingItem(1, "Cà chua bi", "Salad cho Thứ 3", "500g", false),
-                    ShoppingItem(2, "Xà lách Romaine", "Sắp tới hạn tủ lạnh", "2 bắp", false)
-                )
-            ),
-            ShoppingCategory(
-                "Thịt cá",
-                listOf(
-                    ShoppingItem(3, "Cá hồi phi lê", "Cho món Thứ 4", "300g", false),
-                    ShoppingItem(4, "Thịt bò băm", "Cho món Thứ 5", "400g", true)
-                )
-            )
-        )
+fun ShoppingScreen(
+    viewModel: ShoppingViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        viewModel.loadShoppingList();
+    }
+    // Categorize items
+    val categorizedItems = remember(uiState.items) {
+        val groups = uiState.items.groupBy { item ->
+            val name = item.itemName.lowercase()
+            when {
+                name.contains("thịt") || name.contains("cá") || name.contains("bò") || 
+                name.contains("heo") || name.contains("gà") || name.contains("tôm") || 
+                name.contains("hải sản") || name.contains("pork") || name.contains("beef") || 
+                name.contains("chicken") || name.contains("salmon") -> "Thịt & Hải sản"
+                
+                name.contains("rau") || name.contains("củ") || name.contains("quả") || 
+                name.contains("nấm") || name.contains("cà chua") || name.contains("tỏi") || 
+                name.contains("hành") || name.contains("xà lách") || name.contains("salad") ||
+                name.contains("bơ") || name.contains("trứng") || name.contains("egg") -> "Rau củ & Trứng"
+                
+                else -> "Khác"
+            }
+        }
+        groups.toSortedMap()
     }
 
     Scaffold(
         containerColor = Background
     ) { paddingValues ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                WasteTrackerWidget()
-            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    WasteTrackerWidget(uiState.wasteStats)
+                }
 
-            item {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Primary, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
+                item {
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = "AI", tint = Primary, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "AI Gợi Ý Đi Chợ",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextOnSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "AI Gợi Ý Đi Chợ",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextOnSurface
+                            text = "Tự động cập nhật các nguyên liệu còn thiếu từ thực đơn của bạn.",
+                            fontSize = 14.sp,
+                            color = TextSecondary
                         )
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Dựa trên thực đơn tuần tới và tủ lạnh hiện tại.",
-                        fontSize = 14.sp,
-                        color = TextSecondary
-                    )
                 }
-            }
 
-            categories.forEachIndexed { catIndex, category ->
-                item {
-                    Text(
-                        text = category.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-                    )
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column {
-                            category.items.forEachIndexed { itemIndex, item ->
-                                ShoppingItemRow(item = item, onToggle = {
-                                    val updatedItems = category.items.toMutableList()
-                                    updatedItems[itemIndex] = item.copy(isChecked = !item.isChecked)
-                                    categories[catIndex] = category.copy(items = updatedItems)
-                                })
-                                if (itemIndex < category.items.size - 1) {
-                                    HorizontalDivider(color = SurfaceContainer, modifier = Modifier.padding(horizontal = 16.dp))
+                if (uiState.items.isEmpty() && !uiState.isLoading) {
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Danh sách trống. Hãy lên kế hoạch thực đơn hoặc thêm món thủ công!",
+                                    color = TextSecondary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    categorizedItems.forEach { (categoryName, items) ->
+                        item {
+                            Text(
+                                text = categoryName,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextSecondary,
+                                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+                            )
+                            Card(
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column {
+                                    items.forEachIndexed { index, item ->
+                                        ShoppingItemRow(
+                                            item = item,
+                                            onToggle = {
+                                                viewModel.toggleShoppingItem(item.id, !item.isPurchased)
+                                            },
+                                            onDelete = {
+                                                viewModel.deleteShoppingItem(item.id)
+                                            }
+                                        )
+                                        if (index < items.size - 1) {
+                                            HorizontalDivider(color = SurfaceContainer, modifier = Modifier.padding(horizontal = 16.dp))
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                item {
+                    Button(
+                        onClick = { showAddDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryContainer,
+                            contentColor = OnPrimaryContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Thêm món khác", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.height(100.dp)) // Padding for bottom nav
+                }
             }
 
-            item {
-                Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = PrimaryContainer,
-                        contentColor = OnPrimaryContainer
-                    )
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Thêm món khác", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    CircularProgressIndicator(color = Primary)
                 }
-                Spacer(modifier = Modifier.height(100.dp)) // Padding for bottom nav
             }
         }
+    }
+
+    if (showAddDialog) {
+        var name by remember { mutableStateOf("") }
+        var quantityStr by remember { mutableStateOf("") }
+        var unit by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Thêm nguyên liệu cần mua", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Tên nguyên liệu") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = quantityStr,
+                            onValueChange = { quantityStr = it },
+                            label = { Text("Số lượng") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = unit,
+                            onValueChange = { unit = it },
+                            label = { Text("Đơn vị (VD: g, cái...)") },
+                            modifier = Modifier.weight(1.2f),
+                            singleLine = true
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (name.isNotBlank()) {
+                            val quantity = quantityStr.toDoubleOrNull()
+                            viewModel.addShoppingItem(name, quantity, unit.takeIf { it.isNotBlank() })
+                            showAddDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                ) {
+                    Text("Thêm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("Hủy", color = TextSecondary)
+                }
+            }
+        )
     }
 }
 
 @Composable
-fun WasteTrackerWidget() {
+fun WasteTrackerWidget(stats: com.example.android_app.data.remote.api.WasteStatsResponse?) {
+    val thisWeekWeight = stats?.thisWeekWeight ?: 0f
+    val percentChange = stats?.percentChange ?: 0
+    val displayPercent = if (percentChange >= 0) "+$percentChange%" else "$percentChange%"
+    val badgeColor = if (percentChange <= 0) Primary else ErrorColor
+
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
@@ -167,15 +280,15 @@ fun WasteTrackerWidget() {
                 Text("LÃNG PHÍ TUẦN QUA", fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = TextSecondary)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("1.2 kg", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextOnSurface)
+                    Text("${thisWeekWeight} kg", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextOnSurface)
                     Spacer(modifier = Modifier.width(12.dp))
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(50))
-                            .background(PrimaryContainer.copy(alpha = 0.2f))
+                            .background(badgeColor.copy(alpha = 0.2f))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        Text("-15%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Primary)
+                        Text(displayPercent, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = badgeColor)
                     }
                 }
             }
@@ -193,7 +306,11 @@ fun WasteTrackerWidget() {
 }
 
 @Composable
-fun ShoppingItemRow(item: ShoppingItem, onToggle: () -> Unit) {
+fun ShoppingItemRow(
+    item: ShoppingItem,
+    onToggle: () -> Unit,
+    onDelete: () -> Unit
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -202,9 +319,9 @@ fun ShoppingItemRow(item: ShoppingItem, onToggle: () -> Unit) {
             .padding(16.dp)
     ) {
         Icon(
-            imageVector = if (item.isChecked) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+            imageVector = if (item.isPurchased) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
             contentDescription = "Check",
-            tint = if (item.isChecked) Primary else TextSecondary.copy(alpha = 0.5f),
+            tint = if (item.isPurchased) Primary else TextSecondary.copy(alpha = 0.5f),
             modifier = Modifier.size(28.dp)
         )
         
@@ -212,30 +329,29 @@ fun ShoppingItemRow(item: ShoppingItem, onToggle: () -> Unit) {
         
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = item.name,
+                text = item.itemName,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (item.isChecked) TextSecondary else TextOnSurface,
-                textDecoration = if (item.isChecked) TextDecoration.LineThrough else null
+                color = if (item.isPurchased) TextSecondary else TextOnSurface,
+                textDecoration = if (item.isPurchased) TextDecoration.LineThrough else null
             )
-            Text(
-                text = item.note,
-                fontSize = 13.sp,
-                color = TextSecondary
+            item.quantity?.let { qty ->
+                val formattedQty = if (qty % 1.0 == 0.0) qty.toInt().toString() else qty.toString()
+                Text(
+                    text = "$formattedQty ${item.unit ?: ""}",
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
+            }
+        }
+
+        IconButton(onClick = onDelete) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete",
+                tint = ErrorColor.copy(alpha = 0.7f),
+                modifier = Modifier.size(22.dp)
             )
         }
-        
-        Text(
-            text = item.quantity,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (item.isChecked) TextSecondary else TextOnSurface
-        )
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun ShoppingScreenPreview() {
-    ShoppingScreen()
 }

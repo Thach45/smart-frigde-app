@@ -8,6 +8,7 @@ import { healthRouter } from './routes/health.js';
 import { inventoryRouter } from './routes/inventory.routes.js';
 import { mealRouter } from './routes/meal.routes.js';
 import { userRouter } from './routes/user.routes.js';
+import { shoppingListRouter } from './routes/shopping-list.routes.js';
 
 export function createApp() {
   const app = express();
@@ -22,6 +23,7 @@ export function createApp() {
   app.use('/users', userRouter);
   app.use('/inventory', inventoryRouter);
   app.use('/meals', mealRouter);
+  app.use('/shopping-list', shoppingListRouter);
 
   app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof multer.MulterError) {

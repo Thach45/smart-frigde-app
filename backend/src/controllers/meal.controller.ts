@@ -76,6 +76,38 @@ export const mealController = {
         res.status(404).json({ error: 'Meal not found' });
         return;
       }
+
+      // Automatically deduct ingredients from fridge inventory
+      const activeInventory = await prisma.inventoryItem.findMany({
+        where: {
+          userId: req.userId!,
+          quantity: { gt: 0 },
+          isWasted: false
+        }
+      });
+
+      for (const ingredient of meal.ingredients) {
+        const match = activeInventory.find(inv => 
+          inv.name.toLowerCase().trim() === ingredient.name.toLowerCase().trim()
+        );
+
+        if (match && ingredient.quantity) {
+          const newQty = Math.max(0, match.quantity - ingredient.quantity);
+          if (newQty <= 0) {
+            // Remove item from fridge if completely consumed
+            await prisma.inventoryItem.delete({
+              where: { id: match.id }
+            });
+          } else {
+            // Deduct the quantity directly
+            await prisma.inventoryItem.update({
+              where: { id: match.id },
+              data: { quantity: newQty }
+            });
+          }
+        }
+      }
+
       const updatedMeal = await prisma.meal.update({
         where: { id: mealId },
         data: { status: 'COOKED' }
