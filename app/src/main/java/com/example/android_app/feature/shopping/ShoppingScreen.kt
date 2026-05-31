@@ -21,45 +21,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.android_app.domain.model.ShoppingItem
 import com.example.android_app.ui.theme.*
 
-// Mock data model
-data class ShoppingItem(
-    val id: Int,
-    val name: String,
-    val note: String,
-    val quantity: String,
-    var isChecked: Boolean = false
-)
-
-data class ShoppingCategory(
-    val name: String,
-    val items: List<ShoppingItem>
-)
-
 @Composable
-fun ShoppingScreen() {
-    val categories = remember {
-        mutableStateListOf(
-            ShoppingCategory(
-                "Rau củ quả",
-                listOf(
-                    ShoppingItem(1, "Cà chua bi", "Salad cho Thứ 3", "500g", false),
-                    ShoppingItem(2, "Xà lách Romaine", "Sắp tới hạn tủ lạnh", "2 bắp", false)
-                )
-            ),
-            ShoppingCategory(
-                "Thịt cá",
-                listOf(
-                    ShoppingItem(3, "Cá hồi phi lê", "Cho món Thứ 4", "300g", false),
-                    ShoppingItem(4, "Thịt bò băm", "Cho món Thứ 5", "400g", true)
-                )
-            )
-        )
+fun ShoppingScreen(
+    viewModel: ShoppingViewModel = hiltViewModel()
+) {
+    val shoppingItems by viewModel.shoppingItems.collectAsState()
+    val groupedItems = remember(shoppingItems) {
+        shoppingItems.groupBy { it.categoryName }
     }
+
+    var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Background
@@ -97,30 +74,46 @@ fun ShoppingScreen() {
                 }
             }
 
-            categories.forEachIndexed { catIndex, category ->
+            if (groupedItems.isEmpty()) {
                 item {
-                    Text(
-                        text = category.name,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
-                    )
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        modifier = Modifier.fillMaxWidth()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column {
-                            category.items.forEachIndexed { itemIndex, item ->
-                                ShoppingItemRow(item = item, onToggle = {
-                                    val updatedItems = category.items.toMutableList()
-                                    updatedItems[itemIndex] = item.copy(isChecked = !item.isChecked)
-                                    categories[catIndex] = category.copy(items = updatedItems)
-                                })
-                                if (itemIndex < category.items.size - 1) {
-                                    HorizontalDivider(color = SurfaceContainer, modifier = Modifier.padding(horizontal = 16.dp))
+                        Text(
+                            text = "Danh sách mua sắm trống.",
+                            color = TextSecondary,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            } else {
+                groupedItems.forEach { (categoryName, items) ->
+                    item {
+                        Text(
+                            text = categoryName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+                        )
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column {
+                                items.forEachIndexed { itemIndex, item ->
+                                    ShoppingItemRow(
+                                        item = item,
+                                        onToggle = { viewModel.toggleItem(item.id) }
+                                    )
+                                    if (itemIndex < items.size - 1) {
+                                        HorizontalDivider(color = SurfaceContainer, modifier = Modifier.padding(horizontal = 16.dp))
+                                    }
                                 }
                             }
                         }
@@ -130,8 +123,10 @@ fun ShoppingScreen() {
 
             item {
                 Button(
-                    onClick = { /* TODO */ },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = PrimaryContainer,
@@ -145,6 +140,16 @@ fun ShoppingScreen() {
                 Spacer(modifier = Modifier.height(100.dp)) // Padding for bottom nav
             }
         }
+    }
+
+    if (showAddDialog) {
+        AddShoppingItemDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, quantity, note, category ->
+                viewModel.addItem(name, note, quantity, category)
+                showAddDialog = false
+            }
+        )
     }
 }
 
@@ -218,11 +223,13 @@ fun ShoppingItemRow(item: ShoppingItem, onToggle: () -> Unit) {
                 color = if (item.isChecked) TextSecondary else TextOnSurface,
                 textDecoration = if (item.isChecked) TextDecoration.LineThrough else null
             )
-            Text(
-                text = item.note,
-                fontSize = 13.sp,
-                color = TextSecondary
-            )
+            if (item.note.isNotBlank()) {
+                Text(
+                    text = item.note,
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
+            }
         }
         
         Text(
@@ -234,8 +241,79 @@ fun ShoppingItemRow(item: ShoppingItem, onToggle: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun ShoppingScreenPreview() {
-    ShoppingScreen()
+fun AddShoppingItemDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, quantity: String, note: String, category: String) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var quantity by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("Rau củ quả") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Thêm nguyên liệu cần mua", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Tên nguyên liệu") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = quantity,
+                    onValueChange = { quantity = it },
+                    label = { Text("Số lượng (VD: 500g, 2 quả)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Ghi chú") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Text("Phân loại", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val categories = listOf("Rau củ quả", "Thịt cá", "Khác")
+                    categories.forEach { cat ->
+                        FilterChip(
+                            selected = category == cat,
+                            onClick = { category = cat },
+                            label = { Text(cat) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onConfirm(name, quantity, note, category)
+                    }
+                },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Xác nhận")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        }
+    )
 }

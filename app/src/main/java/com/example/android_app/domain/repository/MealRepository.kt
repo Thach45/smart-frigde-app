@@ -4,7 +4,7 @@ import com.example.android_app.domain.model.DailyCalorie
 import com.example.android_app.domain.model.Meal
 
 interface MealRepository {
-    suspend fun suggestFromItem(targetItemId: String): Result<Meal>
+    suspend fun suggestFromItem(targetItemId: String): Result<List<Meal>>
     suspend fun acceptMeal(mealId: String): Result<Meal>
     suspend fun getMeals(date: String? = null): Result<List<Meal>>
     suspend fun markMealCooked(mealId: String): Result<Meal>

@@ -37,4 +37,10 @@ abstract class RepositoryModule {
     abstract fun bindUserRepository(
         userRepositoryImpl: com.example.android_app.data.repository.UserRepositoryImpl
     ): com.example.android_app.domain.repository.UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindShoppingRepository(
+        shoppingRepositoryImpl: com.example.android_app.data.repository.ShoppingRepositoryImpl
+    ): com.example.android_app.domain.repository.ShoppingRepository
 }

@@ -7,7 +7,7 @@ import javax.inject.Inject
 class SuggestFromItemUseCase @Inject constructor(
     private val mealRepository: MealRepository
 ) {
-    suspend operator fun invoke(targetItemId: String): Result<Meal> {
+    suspend operator fun invoke(targetItemId: String): Result<List<Meal>> {
         if (targetItemId.isBlank()) {
             return Result.failure(Exception("ID nguyên liệu không được để trống"))
         }
