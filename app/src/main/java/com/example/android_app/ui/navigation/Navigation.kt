@@ -44,6 +44,7 @@ import com.example.android_app.ui.theme.OutlineVariant
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.android_app.feature.home.HomeScreen
+import com.example.android_app.feature.home.CategoryDetailScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Login    : Screen("login",      "Đăng Nhập",   Icons.Default.Login)
@@ -76,8 +77,8 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
         // ── Các màn hình chính (CÓ bottom bar) ───────────────────────────────
         composable(Screen.Home.route) {
             MainScaffold(navController) {
-                HomeScreen(onFoodClick = { food ->
-                    navController.navigate("food_detail/${food.id}")
+                HomeScreen(onCategoryClick = { categoryName ->
+                    navController.navigate("category_detail/$categoryName")
                 })
             }
         }
@@ -104,6 +105,10 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
         }
         composable("scanner") {
             com.example.android_app.feature.inventory.scanner.ScannerScreen(navController)
+        }
+        composable("category_detail/{categoryName}") { backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString("categoryName") ?: "Khác"
+            CategoryDetailScreen(navController, categoryName)
         }
         composable("food_detail/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: ""

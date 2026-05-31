@@ -33,6 +33,7 @@ enum MealStatus {
   SUGGESTED   // AI vừa gợi ý (từ cronjob hoặc sinh tự động)
   ACCEPTED    // Người dùng đồng ý nấu
   REJECTED    // Người dùng bỏ qua
+  COOKED      // Người dùng đã nấu xong
 }
 
 // Phương thức nhập liệu

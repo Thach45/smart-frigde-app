@@ -68,4 +68,10 @@ object NetworkModule {
     fun provideMealApiService(retrofit: Retrofit): com.example.android_app.data.remote.api.MealApiService {
         return retrofit.create(com.example.android_app.data.remote.api.MealApiService::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideUserApiService(retrofit: Retrofit): com.example.android_app.data.remote.api.UserApiService {
+        return retrofit.create(com.example.android_app.data.remote.api.UserApiService::class.java)
+    }
 }

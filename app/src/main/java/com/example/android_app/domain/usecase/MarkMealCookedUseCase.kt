@@ -4,10 +4,10 @@ import com.example.android_app.domain.model.Meal
 import com.example.android_app.domain.repository.MealRepository
 import javax.inject.Inject
 
-class GetMealsUseCase @Inject constructor(
+class MarkMealCookedUseCase @Inject constructor(
     private val mealRepository: MealRepository
 ) {
-    suspend operator fun invoke(date: String? = null): Result<List<Meal>> {
-        return mealRepository.getMeals(date)
+    suspend operator fun invoke(mealId: String): Result<Meal> {
+        return mealRepository.markMealCooked(mealId)
     }
 }

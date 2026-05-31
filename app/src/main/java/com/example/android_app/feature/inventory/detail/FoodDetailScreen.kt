@@ -99,7 +99,17 @@ fun FoodDetailScreen(
     val scrollState = rememberScrollState()
 
     Scaffold(
-        containerColor = Background,
+        topBar = {
+            TopAppBar(
+                title = { Text("Chi tiết thực phẩm", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Quay lại")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
+            )
+        },
         bottomBar = {
             if (item != null) {
                 Surface(
@@ -212,91 +222,66 @@ fun FoodDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .verticalScroll(scrollState)
+                    .padding(horizontal = 20.dp)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Hero Image with Gradient
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(280.dp)
+                // Header Area with Icon and Title
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AsyncImage(
-                        model = item.imageUrl ?: "https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?q=80&w=600&auto=format&fit=crop",
-                        contentDescription = item.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    // Gradient overlay
+                    // Category/Food Icon
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Black.copy(alpha = 0.3f),
-                                        Color.Transparent,
-                                        Color.Black.copy(alpha = 0.6f)
-                                    )
-                                )
-                            )
-                    )
-
-                    // Navigation Back Button
-                    Box(
-                        modifier = Modifier
-                            .statusBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .size(64.dp)
+                            .background(statusColor.copy(alpha = 0.15f), CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        IconButton(
-                            onClick = { navController.popBackStack() },
+                        // Assuming we don't have the icon readily here, let's just use a general one
+                        // or we could use the FridgeItemMapper here but it's okay to use Kitchen
+                        Icon(
+                            imageVector = Icons.Default.Kitchen,
+                            contentDescription = null,
+                            tint = statusColor,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(16.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.name,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextOnSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        // Status Badge
+                        Box(
                             modifier = Modifier
-                                .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                                .size(40.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(statusColor.copy(alpha = 0.15f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Quay lại",
-                                tint = Color.White
+                            Text(
+                                text = statusText,
+                                color = statusColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
                             )
                         }
-                    }
-
-                    // Status Badge Float
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(statusColor.copy(alpha = 0.9f))
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = statusText,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
                     }
                 }
 
                 // Details Content Section
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-16).dp)
-                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                        .background(Background)
-                        .padding(horizontal = 20.dp, vertical = 24.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Name and Freshness Slider
+                    // Freshness Slider
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = item.name,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextOnSurface
-                        )
 
                         Text(
                             text = "Độ tươi ngon",

@@ -13,13 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -30,13 +24,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -56,9 +50,8 @@ val SurfaceContainer = Color(0xFFEEEEEE)
 val OutlineVariant = Color(0xFFC5C9B1)
 val TextOnSurface = Color(0xFF1A1C1C)
 val TextSecondary = Color(0xFF586062)
-val ProteinColor = Color(0xFFF97316)
-val CarbsColor = Color(0xFF3B82F6)
-val FatColor = Color(0xFFEAB308)
+val ChartBarColor = Color(0xFF8BC34A)
+val ChartBarSelectedColor = Primary
 
 @Composable
 fun MealScreen(
@@ -67,8 +60,40 @@ fun MealScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Calculate current week dates
+    val calendar = Calendar.getInstance()
+    // Find monday of this week
+    calendar.firstDayOfWeek = Calendar.MONDAY
+    calendar.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    
+    val weekDates = mutableListOf<Pair<String, String>>()
+    val fullDates = mutableListOf<String>()
+    
+    val displayFormat = SimpleDateFormat("dd", Locale.getDefault())
+    val fullFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val dayNames = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+    
+    for (i in 0..6) {
+        weekDates.add(Pair(dayNames[i], displayFormat.format(calendar.time)))
+        fullDates.add(fullFormat.format(calendar.time))
+        calendar.add(Calendar.DAY_OF_MONTH, 1)
+    }
+
+    // Default to today
+    val todayIndex = Calendar.getInstance().let {
+        var dayOfWeek = it.get(Calendar.DAY_OF_WEEK) - 2
+        if (dayOfWeek < 0) dayOfWeek = 6 // Sunday
+        dayOfWeek
+    }
+    
+    var selectedDateIndex by remember { mutableStateOf(todayIndex) }
+
     LaunchedEffect(Unit) {
-        viewModel.loadMeals()
+        viewModel.loadWeeklyCalories(fullDates[0]) // Load weekly calories starting from Monday
+    }
+
+    LaunchedEffect(selectedDateIndex) {
+        viewModel.loadMeals(fullDates[selectedDateIndex])
     }
 
     Column(
@@ -78,9 +103,16 @@ fun MealScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-        HeaderAndWeekView()
+        HeaderAndWeekView(
+            weekDates = weekDates,
+            selectedIndex = selectedDateIndex,
+            onDateSelected = { selectedDateIndex = it },
+            todayText = "Hôm nay, ${weekDates[todayIndex].second} Tháng ${Calendar.getInstance().get(Calendar.MONTH) + 1}"
+        )
         Spacer(modifier = Modifier.height(32.dp))
-        NutritionRingsSection()
+        
+        WeeklyCalorieChartSection(uiState.weeklyCalories, selectedDateIndex)
+        
         Spacer(modifier = Modifier.height(32.dp))
 
         if (uiState.isLoading && uiState.meals.isEmpty()) {
@@ -95,6 +127,9 @@ fun MealScreen(
                 meals = uiState.meals,
                 onMealClick = { mealId ->
                     navController.navigate("recipe_detail/$mealId")
+                },
+                onCookClick = { mealId ->
+                    viewModel.markAsCooked(mealId, fullDates[selectedDateIndex])
                 }
             )
         }
@@ -104,9 +139,12 @@ fun MealScreen(
 }
 
 @Composable
-fun HeaderAndWeekView() {
-    var selectedDate by remember { mutableStateOf("28") }
-    
+fun HeaderAndWeekView(
+    weekDates: List<Pair<String, String>>,
+    selectedIndex: Int,
+    onDateSelected: (Int) -> Unit,
+    todayText: String
+) {
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -114,8 +152,8 @@ fun HeaderAndWeekView() {
             verticalAlignment = Alignment.Bottom
         ) {
             Column {
-                Text("Hôm nay", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
-                Text("Thứ Năm, 28 Tháng 5", fontSize = 16.sp, color = TextSecondary)
+                Text("Lịch trình", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
+                Text(todayText, fontSize = 16.sp, color = TextSecondary)
             }
             Row(
                 modifier = Modifier
@@ -138,17 +176,8 @@ fun HeaderAndWeekView() {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            val dates = listOf(
-                Pair("T2", "26"),
-                Pair("T3", "27"),
-                Pair("T4", "28"),
-                Pair("T5", "29"),
-                Pair("T6", "30"),
-                Pair("T7", "31"),
-            )
-            
-            dates.forEach { date ->
-                val isSelected = date.second == selectedDate
+            weekDates.forEachIndexed { index, date ->
+                val isSelected = index == selectedIndex
                 Column(
                     modifier = Modifier
                         .width(56.dp)
@@ -158,7 +187,7 @@ fun HeaderAndWeekView() {
                         }
                         .clip(RoundedCornerShape(12.dp))
                         .background(if (isSelected) Primary else SurfaceContainer)
-                        .clickable { selectedDate = date.second },
+                        .clickable { onDateSelected(index) },
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -182,7 +211,10 @@ fun HeaderAndWeekView() {
 }
 
 @Composable
-fun NutritionRingsSection() {
+fun WeeklyCalorieChartSection(weeklyCalories: List<Float>, selectedDateIndex: Int) {
+    val maxCal = 2500f
+    val days = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -195,71 +227,43 @@ fun NutritionRingsSection() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Mục tiêu Dinh dưỡng", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = TextSecondary, modifier = Modifier.size(20.dp))
+                Text("Biểu đồ Calo 7 ngày", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
+                Icon(Icons.Default.Insights, contentDescription = "Stats", tint = TextSecondary, modifier = Modifier.size(20.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Main Calorie Ring
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SurfaceContainerLowest)
-                        .border(1.dp, SurfaceContainer, RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        progress = { 1450f / 2000f },
-                        modifier = Modifier.fillMaxSize(0.8f),
-                        color = Primary,
-                        trackColor = SurfaceContainerHighest,
-                        strokeWidth = 8.dp,
-                        strokeCap = StrokeCap.Round
-                    )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("1,450", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
-                        Text("/2000 kcal", fontSize = 12.sp, color = TextSecondary)
+            // Bar Chart
+            Row(
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                weeklyCalories.forEachIndexed { index, value ->
+                    val isSelected = index == selectedDateIndex
+                    val heightRatio = if (value > 0) value / maxCal else 0.05f
+                    
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .fillMaxHeight(heightRatio.coerceAtMost(1f))
+                                .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                .background(if (isSelected) ChartBarSelectedColor else ChartBarColor.copy(alpha = 0.6f))
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = days[index],
+                            fontSize = 12.sp,
+                            color = if (isSelected) TextOnSurface else TextSecondary,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
                     }
                 }
-                
-                // Macros
-                Column(
-                    modifier = Modifier.weight(1f).aspectRatio(1f),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    MacroRingRow(label = "Protein", value = "65/120g", color = ProteinColor, progress = 65f/120f, initial = "P")
-                    MacroRingRow(label = "Carbs", value = "120/250g", color = CarbsColor, progress = 120f/250f, initial = "C")
-                    MacroRingRow(label = "Fat", value = "45/60g", color = FatColor, progress = 45f/60f, initial = "F")
-                }
             }
-        }
-    }
-}
-
-@Composable
-fun MacroRingRow(label: String, value: String, color: Color, progress: Float, initial: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier.size(40.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxSize(),
-                color = color,
-                trackColor = SurfaceContainerHighest,
-                strokeWidth = 4.dp,
-                strokeCap = StrokeCap.Round
-            )
-            Text(initial, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextOnSurface)
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(label, fontSize = 12.sp, color = TextSecondary)
-            Text(value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
         }
     }
 }
@@ -267,7 +271,8 @@ fun MacroRingRow(label: String, value: String, color: Color, progress: Float, in
 @Composable
 fun MealPlanSection(
     meals: List<com.example.android_app.domain.model.Meal>,
-    onMealClick: (String) -> Unit
+    onMealClick: (String) -> Unit,
+    onCookClick: (String) -> Unit
 ) {
     Column {
         Text("Lịch trình bữa ăn", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = TextOnSurface)
@@ -292,7 +297,7 @@ fun MealPlanSection(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Chưa có thực đơn nào được chọn",
+                        text = "Chưa có thực đơn nào",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextOnSurface
@@ -309,39 +314,22 @@ fun MealPlanSection(
         } else {
             meals.forEach { meal ->
                 val formattedCal = meal.calories?.let { "$it kcal" } ?: "350 kcal"
-                val dateText = try {
-                    val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).apply {
-                        timeZone = TimeZone.getTimeZone("UTC")
-                    }
-                    val parsedDate = format.parse(meal.date)
-                    SimpleDateFormat("dd/MM", Locale.getDefault()).format(parsedDate ?: Date())
-                } catch (e: Exception) {
-                    try {
-                        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
-                            timeZone = TimeZone.getTimeZone("UTC")
-                        }
-                        val parsedDate = format.parse(meal.date)
-                        SimpleDateFormat("dd/MM", Locale.getDefault()).format(parsedDate ?: Date())
-                    } catch (e2: Exception) {
-                        ""
-                    }
-                }
+                val isCooked = meal.status == "COOKED"
+                val isAccepted = meal.status == "ACCEPTED"
                 
-                val displayDate = if (dateText.isNotBlank()) " • $dateText" else ""
-
                 MealCard(
-                    mealName = "Bữa Ăn$displayDate",
-                    statusLabel = "Đã chốt • $formattedCal",
+                    mealName = "Bữa Ăn",
+                    statusLabel = if (isCooked) "Đã nấu xong" else "Đã chốt • $formattedCal",
                     dishName = meal.title,
                     subtitle = meal.description ?: "Tận dụng nguyên liệu từ tủ lạnh",
                     icon = Icons.Default.Restaurant,
-                    iconColor = Primary,
-                    indicatorColor = PrimaryFixedDim,
+                    iconColor = if (isCooked) TextSecondary else Primary,
+                    indicatorColor = if (isCooked) SurfaceContainer else PrimaryFixedDim,
                     imageUrl = meal.imageUrl ?: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200&auto=format&fit=crop",
-                    isCompleted = meal.status == "ACCEPTED",
-                    isSuggested = false,
-                    isWarning = false,
-                    onClick = { onMealClick(meal.id) }
+                    isCooked = isCooked,
+                    showCookButton = isAccepted,
+                    onClick = { onMealClick(meal.id) },
+                    onCookClick = { onCookClick(meal.id) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -359,10 +347,10 @@ fun MealCard(
     iconColor: Color,
     indicatorColor: Color,
     imageUrl: String,
-    isCompleted: Boolean,
-    isSuggested: Boolean,
-    isWarning: Boolean,
-    onClick: () -> Unit = {}
+    isCooked: Boolean,
+    showCookButton: Boolean,
+    onClick: () -> Unit = {},
+    onCookClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -370,8 +358,7 @@ fun MealCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceContainerLowest),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSuggested) 6.dp else 2.dp),
-        border = if (isSuggested) BorderStroke(1.dp, Primary.copy(alpha = 0.2f)) else null
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(modifier = Modifier.height(IntrinsicSize.Min)) {
             // Indicator bar
@@ -396,8 +383,7 @@ fun MealCard(
                     Text(
                         statusLabel, 
                         fontSize = 12.sp, 
-                        fontWeight = if (isSuggested) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSuggested) Primary else TextSecondary
+                        color = if (isCooked) TextSecondary else Primary
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -405,14 +391,14 @@ fun MealCard(
                 // Content
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.let { if (isCompleted) it.alpha(0.6f) else it }
+                    modifier = Modifier.let { if (isCooked) it.alpha(0.5f) else it }
                 ) {
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = dishName,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(if (isSuggested) 80.dp else 64.dp)
+                            .size(64.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(SurfaceContainer)
                     )
@@ -424,72 +410,34 @@ fun MealCard(
                             fontSize = 14.sp, 
                             fontWeight = FontWeight.SemiBold, 
                             color = TextOnSurface,
-                            textDecoration = if (isCompleted) TextDecoration.LineThrough else null
+                            textDecoration = if (isCooked) TextDecoration.LineThrough else null
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        if (isSuggested) {
-                            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(TertiaryFixed)
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text("Sắp hết hạn: Xà lách", fontSize = 10.sp, color = OnTertiaryFixedVariant)
-                                }
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(SurfaceContainer)
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text("Nấu: 15p", fontSize = 10.sp, color = TextSecondary)
-                                }
-                            }
-                        } else {
-                            Text(
-                                text = subtitle, 
-                                fontSize = 12.sp, 
-                                color = if (isWarning) ErrorColor else TextSecondary
-                            )
-                        }
+                        Text(
+                            text = subtitle, 
+                            fontSize = 12.sp, 
+                            color = TextSecondary,
+                            maxLines = 2
+                        )
                     }
                     
-                    if (isCompleted) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = "Completed", tint = Primary, modifier = Modifier.size(28.dp))
-                    } else if (isWarning) {
-                        Box(
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable { }
-                                .padding(8.dp)
-                        ) {
-                            Icon(Icons.Default.ShoppingCart, contentDescription = "Shop", tint = Primary, modifier = Modifier.size(24.dp))
-                        }
+                    if (isCooked) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = "Cooked", tint = Primary, modifier = Modifier.size(28.dp))
                     }
                 }
                 
                 // Suggested Actions
-                if (isSuggested) {
+                if (showCookButton) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                         Button(
-                            onClick = { },
-                            modifier = Modifier.weight(1f),
+                            onClick = onCookClick,
                             colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary),
                             shape = RoundedCornerShape(50)
                         ) {
-                            Text("Nấu món này", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                        OutlinedButton(
-                            onClick = { },
-                            modifier = Modifier.size(48.dp),
-                            shape = CircleShape,
-                            contentPadding = PaddingValues(0.dp),
-                            border = BorderStroke(1.dp, OutlineVariant)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Primary)
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Xác nhận đã nấu", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

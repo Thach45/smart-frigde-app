@@ -1,9 +1,11 @@
 package com.example.android_app.feature.home
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.LocalDrink
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Kitchen
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import com.example.android_app.domain.model.FridgeItem
 import java.text.SimpleDateFormat
@@ -37,16 +39,34 @@ class FridgeItemMapper @Inject constructor() {
         return null
     }
 
+    private fun getCategoryIcon(name: String): ImageVector {
+        val n = name.lowercase(Locale.getDefault())
+        return when {
+            n.contains("sữa") || n.contains("nước") || n.contains("bia") || n.contains("nước ngọt") || n.contains("milk") || n.contains("water") || n.contains("drink") || n.contains("juice") || n.contains("pepsi") || n.contains("coca") -> {
+                Icons.Default.LocalDrink
+            }
+            n.contains("thịt") || n.contains("cá") || n.contains("hồi") || n.contains("bò") || n.contains("heo") || n.contains("gà") || n.contains("tôm") || n.contains("sườn") || n.contains("pork") || n.contains("beef") || n.contains("chicken") || n.contains("fish") || n.contains("trứng") || n.contains("egg") -> {
+                Icons.Default.Restaurant
+            }
+            n.contains("rau") || n.contains("cải") || n.contains("xà lách") || n.contains("cà rốt") || n.contains("cà chua") || n.contains("tỏi") || n.contains("ớt") || n.contains("hành") || n.contains("táo") || n.contains("chuối") || n.contains("cam") || n.contains("xoài") || n.contains("nho") || n.contains("salad") || n.contains("fruit") || n.contains("vegetable") -> {
+                Icons.Default.Spa
+            }
+            else -> {
+                Icons.Default.Kitchen
+            }
+        }
+    }
+
     fun mapToUiModel(item: FridgeItem): FoodItem {
         val expiryTime = parseIsoDate(item.expiryDate)?.time ?: System.currentTimeMillis()
 
         val now = System.currentTimeMillis()
         val daysLeft = ((expiryTime - now) / (1000 * 60 * 60 * 24)).toInt()
 
-        val (statusText, color, icon) = when {
-            daysLeft < 0 -> Triple("Đã hỏng", Color(0xFFBA1A1A), Icons.Default.Error)
-            daysLeft <= 2 -> Triple("Sắp hỏng", Color(0xFFF9A825), Icons.Default.Warning)
-            else -> Triple("Còn tươi", Color(0xFF4CAF50), Icons.Default.CheckCircle)
+        val (statusText, color) = when {
+            daysLeft < 0 -> Pair("Đã hỏng", Color(0xFFBA1A1A))
+            daysLeft <= 2 -> Pair("Sắp hỏng", Color(0xFFF9A825))
+            else -> Pair("Còn tươi", Color(0xFF4CAF50))
         }
 
         val formattedQuantity = if (item.quantity % 1.0 == 0.0) {
@@ -62,7 +82,7 @@ class FridgeItemMapper @Inject constructor() {
             progress = if (daysLeft > 0) Math.min(daysLeft / 7f, 1f) else 0f,
             statusText = statusText,
             statusColor = color,
-            badgeIcon = icon,
+            badgeIcon = getCategoryIcon(item.name),
             imageUrl = item.imageUrl ?: "https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?q=80&w=200&auto=format&fit=crop"
         )
     }

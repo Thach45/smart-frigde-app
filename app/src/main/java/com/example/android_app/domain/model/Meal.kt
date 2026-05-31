@@ -20,3 +20,8 @@ data class RecipeIngredient(
     val quantity: Double? = null,
     val unit: String? = null
 )
+
+data class DailyCalorie(
+    val date: String,
+    val totalCalories: Int
+)
