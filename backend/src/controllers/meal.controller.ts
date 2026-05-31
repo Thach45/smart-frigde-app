@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { suggestMeal, suggestMealFromItem } from '../services/meal-ai.service.js';
+import { suggestMeal, suggestMealFromItem, voiceAssistant } from '../services/meal-ai.service.js';
 import { acceptMealAndGenerateShoppingList } from '../services/shopping-list.service.js';
 import { SuggestMealFromItemSchema } from '../dto/meal.dto.js';
 import { prisma } from '../lib/prisma.js';
@@ -186,8 +186,8 @@ export const mealController = {
   voiceAssistant: async (req: Request, res: Response): Promise<void> => {
     try {
       const { text } = req.body;
-      console.log('Voice Assistant Text Command:', text);
-      res.status(200).json({ reply: `Đã nhận được giọng nói: "${text}"` });
+      const result = await voiceAssistant(req.userId!, text);
+      res.status(200).json(result);
     } catch (err: any) {
       console.error('Voice Assistant Error:', err);
       res.status(500).json({ error: 'Failed to process voice assistant command' });

@@ -44,6 +44,8 @@ import com.example.android_app.ui.theme.TertiaryContainer
 import com.example.android_app.ui.theme.TextSecondary
 import com.example.android_app.feature.assistant.voice.SpeechRecognizerManager
 import com.example.android_app.feature.assistant.voice.VoiceViewModel
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 
 data class FoodItem(
     val id: String,
@@ -98,7 +100,10 @@ fun HomeScreen(
         }
         
         item(span = { GridItemSpan(2) }) {
-            VoiceAssistantHeroCard(voiceViewModel = voiceViewModel)
+            VoiceAssistantHeroCard(
+                voiceViewModel = voiceViewModel,
+                onItemAdded = { viewModel.loadItems() }
+            )
         }
         
         item(span = { GridItemSpan(2) }) {
@@ -170,7 +175,10 @@ fun CategoryCard(category: FoodCategory, onClick: () -> Unit) {
 }
 
 @Composable
-fun VoiceAssistantHeroCard(voiceViewModel: VoiceViewModel) {
+fun VoiceAssistantHeroCard(
+    voiceViewModel: VoiceViewModel,
+    onItemAdded: () -> Unit = {}
+) {
     val context = LocalContext.current
     val uiState by voiceViewModel.uiState.collectAsState()
 
@@ -225,9 +233,30 @@ fun VoiceAssistantHeroCard(voiceViewModel: VoiceViewModel) {
         }
     }
 
+    var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+
+    LaunchedEffect(Unit) {
+        tts = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.forLanguageTag("vi-VN")
+            }
+        }
+    }
+
+    LaunchedEffect(uiState.reply) {
+        if (uiState.reply.isNotEmpty()) {
+            tts?.speak(uiState.reply, TextToSpeech.QUEUE_FLUSH, null, null)
+            if (uiState.success) {
+                onItemAdded()
+            }
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             manager.destroy()
+            tts?.stop()
+            tts?.shutdown()
         }
     }
 

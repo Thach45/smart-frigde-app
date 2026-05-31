@@ -9,5 +9,7 @@ data class VoiceRequest(
 )
 
 data class VoiceResponse(
-    val reply: String
+    val success: Boolean,
+    val message: String,
+    val ingredient: com.example.android_app.domain.model.FridgeItem? = null
 )
